@@ -1,0 +1,1 @@
+Pongan aqui las texturas de los planetas (opcional). Ver GUIA_PROYECTO.md.

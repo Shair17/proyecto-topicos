@@ -1,0 +1,10 @@
+# Carpetas que Unity regenera (no copiar ni subir)
+SistemaSolarRA/[Ll]ibrary/
+SistemaSolarRA/[Tt]emp/
+SistemaSolarRA/[Ll]ogs/
+SistemaSolarRA/[Oo]bj/
+SistemaSolarRA/[Bb]uild*/
+SistemaSolarRA/[Uu]ser[Ss]ettings/
+*.csproj
+*.sln
+*.apk
