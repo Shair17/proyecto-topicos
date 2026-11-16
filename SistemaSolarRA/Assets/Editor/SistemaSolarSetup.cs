@@ -3,12 +3,16 @@ using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 
-// Menú "Sistema Solar" en la barra de Unity: arma la escena completa y configura Android.
+// Menú "Sistema Solar" en la barra de Unity: arma la escena de realidad virtual y compila para PC y Android.
+// Desde la terminal: Unity.exe -batchmode -quit -projectPath SistemaSolarRA -executeMethod SistemaSolarSetup.CompilarPC
+//                    (o SistemaSolarSetup.CompilarAPK)
 public static class SistemaSolarSetup
 {
     const string RutaEscena = "Assets/Scenes/SistemaSolar.unity";
     const string RutaMateriales = "Assets/Materials";
     const string RutaTexturas = "Assets/Texturas";
+    const string RutaExe = "Builds/PC/SistemaSolarVR.exe";
+    const string RutaApk = "Builds/Android/SistemaSolarVR.apk";
 
     // Palabras para reconocer texturas en Assets/Texturas (sirven los nombres de Solar System Scope, p. ej. "2k_mars").
     static readonly string[][] ClavesTexturas =
@@ -20,61 +24,9 @@ public static class SistemaSolarSetup
     static readonly string[] TexturasExcluidas =
         { "ring", "anillo", "cloud", "nubes", "night", "normal", "specular", "moon", "luna", "stars", "estrellas" };
 
+    // Escena: cámara que flota en el espacio (CamaraExplorador) + sistema solar + interfaz.
     [MenuItem("Sistema Solar/1. Crear escena", priority = 1)]
     public static void CrearEscena()
-    {
-        if (!VuforiaImportado())
-        {
-            EditorUtility.DisplayDialog("Falta Vuforia",
-                "Primero importen el paquete de Vuforia Engine (add-vuforia-package-*.unitypackage) " +
-                "y la base de datos del cubo. Luego vuelvan a usar este menú.", "Entendido");
-            return;
-        }
-        if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) return;
-        bool licenciaOk = CargarLicenciaVuforia();
-
-        var escena = EditorSceneManager.NewScene(NewSceneSetup.DefaultGameObjects, NewSceneMode.Single);
-        var camaraVieja = GameObject.Find("Main Camera");
-        if (camaraVieja != null) Object.DestroyImmediate(camaraVieja);
-
-        // Cámara AR y cubo (se crean con los mismos menús de Vuforia que se usarían a mano)
-        var arCamera = CrearDesdeMenu("GameObject/Vuforia Engine/AR Camera");
-        if (arCamera != null) arCamera.tag = "MainCamera";
-        var multiTarget = CrearDesdeMenu("GameObject/Vuforia Engine/Multi Target");
-        if (arCamera == null || multiTarget == null)
-        {
-            EditorUtility.DisplayDialog("No se pudo crear",
-                "No se encontraron los menús de Vuforia (AR Camera / Multi Target). Revisen que Vuforia esté bien importado.", "OK");
-            return;
-        }
-        bool filtroOk = FiltrarSoloTracked(multiTarget);
-
-        // Sistema solar dentro del cubo
-        int texturas = CrearSistemaSolar(multiTarget.transform);
-
-        // Interfaz
-        new GameObject("GestorApp").AddComponent<AppUIBuilder>();
-
-        System.IO.Directory.CreateDirectory("Assets/Scenes");
-        EditorSceneManager.SaveScene(escena, RutaEscena);
-        EditorBuildSettings.scenes = new[] { new EditorBuildSettingsScene(RutaEscena, true) };
-        Selection.activeGameObject = multiTarget;
-
-        EditorUtility.DisplayDialog("Escena creada",
-            "Escena guardada en " + RutaEscena + ".\n\n" +
-            "Revisen en el Inspector del MultiTarget que esté elegida la base de datos del cubo.\n" +
-            $"Texturas de planetas asignadas: {texturas} de 9 (opcionales, van en {RutaTexturas}).\n" +
-            (filtroOk ? "" : "\nNo se pudo poner el filtro en 'Tracked': cámbienlo a mano en Default Observer Event Handler.\n") +
-            (licenciaOk ? "" : "\nNo se cargó la licencia: péguenla a mano en Window > Vuforia Configuration.\n") +
-            "\nSiguiente paso: menú Sistema Solar > 2. Configurar Android.", "OK");
-    }
-
-    const string RutaEscenaPC = "Assets/Scenes/VistaPreviaPC.unity";
-    const string RutaExePC = "Builds/VistaPreviaPC/SistemaSolar.exe";
-
-    // Escena sin Vuforia: cámara normal que gira alrededor del Sol. Sirve para probar en la PC.
-    [MenuItem("Sistema Solar/0. Vista previa en PC (sin RA)", priority = 0)]
-    public static void CrearVistaPreviaPC()
     {
         if (!Application.isBatchMode && !EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) return;
 
@@ -92,45 +44,100 @@ public static class SistemaSolarSetup
             });
             camara.clearFlags = CameraClearFlags.Skybox;
         }
-        camara.nearClipPlane = 0.01f;
+        // Planos de recorte cercanos para poder acercarse mucho a los planetas pequeños.
+        camara.nearClipPlane = 0.002f;
         camara.farClipPlane = 20f;
-        camara.gameObject.AddComponent<CamaraVistaPrevia>();
+        camara.fieldOfView = 60f;
+        // Punto de partida: un poco por encima del plano de las órbitas, mirando al Sol desde fuera de Neptuno.
+        camara.transform.position = new Vector3(0f, 0.11f, -0.42f);
+        camara.transform.LookAt(Vector3.zero);
+        camara.gameObject.AddComponent<CamaraExplorador>();
 
         // La única luz es la del Sol (la crea SolarSystemBuilder).
         var luz = Object.FindObjectOfType<Light>();
         if (luz != null) Object.DestroyImmediate(luz.gameObject);
 
-        CrearSistemaSolar(null);
+        int texturas = CrearSistemaSolar();
         new GameObject("GestorApp").AddComponent<AppUIBuilder>();
 
         System.IO.Directory.CreateDirectory("Assets/Scenes");
-        EditorSceneManager.SaveScene(escena, RutaEscenaPC);
+        EditorSceneManager.SaveScene(escena, RutaEscena);
+        EditorBuildSettings.scenes = new[] { new EditorBuildSettingsScene(RutaEscena, true) };
+
+        Debug.Log($"Escena creada en {RutaEscena}. Texturas asignadas: {texturas} de 9.");
         if (!Application.isBatchMode)
-            EditorUtility.DisplayDialog("Vista previa lista",
-                "Escena guardada en " + RutaEscenaPC + ". Presionen Play.\n\n" +
-                "Clic izquierdo en un planeta = ver su ficha. Clic derecho + arrastrar = girar. Rueda = zoom.", "OK");
+            EditorUtility.DisplayDialog("Escena lista",
+                $"Escena guardada en {RutaEscena}. Presionen Play para probarla.\n\n" +
+                "WASD = moverse, Q/E = bajar/subir, arrastrar = mirar, clic en un planeta = ficha.\n" +
+                $"Texturas asignadas: {texturas} de 9.\n\n" +
+                "Siguiente paso: menú Sistema Solar > 2. Compilar para PC o 3. Compilar APK.", "OK");
     }
 
-    // Para la terminal: Unity.exe -batchmode -quit -projectPath ... -executeMethod SistemaSolarSetup.CompilarVistaPreviaPC
-    public static void CompilarVistaPreviaPC()
+    [MenuItem("Sistema Solar/2. Compilar para PC (.exe)", priority = 2)]
+    public static void CompilarPC()
     {
-        CrearVistaPreviaPC();
-        PlayerSettings.productName = "SistemaSolarRA";
+        if (!AsegurarEscena()) return;
+        ConfigurarComun();
         PlayerSettings.fullScreenMode = FullScreenMode.Windowed;
-        PlayerSettings.defaultScreenWidth = 540;
-        PlayerSettings.defaultScreenHeight = 960;
+        PlayerSettings.defaultScreenWidth = 1280;
+        PlayerSettings.defaultScreenHeight = 720;
         PlayerSettings.resizableWindow = true;
-        var reporte = BuildPipeline.BuildPlayer(new[] { RutaEscenaPC }, RutaExePC,
+        var reporte = BuildPipeline.BuildPlayer(new[] { RutaEscena }, RutaExe,
             BuildTarget.StandaloneWindows64, BuildOptions.None);
-        Debug.Log("RESULTADO_BUILD: " + reporte.summary.result + " -> " + RutaExePC);
-        if (Application.isBatchMode && reporte.summary.result != UnityEditor.Build.Reporting.BuildResult.Succeeded)
-            EditorApplication.Exit(1);
+        Terminar(reporte, RutaExe, "Abran SistemaSolarVR.exe. Para pantalla completa: Alt + Enter.");
     }
 
-    static int CrearSistemaSolar(Transform padre)
+    [MenuItem("Sistema Solar/3. Compilar APK (Android)", priority = 3)]
+    public static void CompilarAPK()
+    {
+        if (!AsegurarEscena()) return;
+        ConfigurarComun();
+        PlayerSettings.SetApplicationIdentifier(BuildTargetGroup.Android, "pe.edu.unt.sistemasolarvr");
+        PlayerSettings.SetScriptingBackend(BuildTargetGroup.Android, ScriptingImplementation.IL2CPP);
+        PlayerSettings.Android.targetArchitectures = AndroidArchitecture.ARM64;
+        if (PlayerSettings.Android.minSdkVersion < AndroidSdkVersions.AndroidApiLevel24)
+            PlayerSettings.Android.minSdkVersion = AndroidSdkVersions.AndroidApiLevel24;
+        // Horizontal: es como se mira mejor alrededor girando el teléfono.
+        PlayerSettings.defaultInterfaceOrientation = UIOrientation.LandscapeLeft;
+        EditorUserBuildSettings.buildAppBundle = false;
+        if (EditorUserBuildSettings.activeBuildTarget != BuildTarget.Android)
+            EditorUserBuildSettings.SwitchActiveBuildTarget(BuildTargetGroup.Android, BuildTarget.Android);
+
+        System.IO.Directory.CreateDirectory("Builds/Android");
+        var reporte = BuildPipeline.BuildPlayer(new[] { RutaEscena }, RutaApk, BuildTarget.Android, BuildOptions.None);
+        Terminar(reporte, RutaApk, "Pásenlo al celular (cable, Drive o WhatsApp) e instálenlo.");
+    }
+
+    static void ConfigurarComun()
+    {
+        PlayerSettings.companyName = "UNT";
+        PlayerSettings.productName = "SistemaSolarVR";
+    }
+
+    // Si la escena no existe, la crea (así los menús 2 y 3 funcionan aunque se salte el 1).
+    static bool AsegurarEscena()
+    {
+        if (!System.IO.File.Exists(RutaEscena)) CrearEscena();
+        return System.IO.File.Exists(RutaEscena);
+    }
+
+    static void Terminar(UnityEditor.Build.Reporting.BuildReport reporte, string ruta, string siguiente)
+    {
+        bool ok = reporte.summary.result == UnityEditor.Build.Reporting.BuildResult.Succeeded;
+        Debug.Log("RESULTADO_BUILD: " + reporte.summary.result + " -> " + ruta);
+        if (Application.isBatchMode)
+        {
+            if (!ok) EditorApplication.Exit(1);
+            return;
+        }
+        if (ok) EditorUtility.RevealInFinder(ruta);
+        EditorUtility.DisplayDialog(ok ? "Compilación lista" : "Error al compilar",
+            ok ? $"Se creó {ruta}.\n\n{siguiente}" : "Revisen la consola (Window > General > Console).", "OK");
+    }
+
+    static int CrearSistemaSolar()
     {
         var sistema = new GameObject("SistemaSolar");
-        sistema.transform.SetParent(padre, false);
         var builder = sistema.AddComponent<SolarSystemBuilder>();
         builder.materialPlaneta = CrearMaterial("Mat_Planeta", "Standard", m =>
         {
@@ -150,83 +157,6 @@ public static class SistemaSolarSetup
         return AsignarTexturas(builder);
     }
 
-    [MenuItem("Sistema Solar/2. Configurar Android", priority = 2)]
-    public static void ConfigurarAndroid()
-    {
-        ConfigurarAndroidSinDialogo();
-        EditorUtility.DisplayDialog("Android listo",
-            "Proyecto configurado para Android (IL2CPP, ARM64, vertical).\n\n" +
-            "Siguiente paso: menú Sistema Solar > 3. Compilar APK (o File > Build And Run con el celular conectado).", "OK");
-    }
-
-    static void ConfigurarAndroidSinDialogo()
-    {
-        PlayerSettings.companyName = "UNT";
-        PlayerSettings.productName = "SistemaSolarRA";
-        PlayerSettings.SetApplicationIdentifier(BuildTargetGroup.Android, "pe.edu.unt.sistemasolarra");
-        PlayerSettings.SetScriptingBackend(BuildTargetGroup.Android, ScriptingImplementation.IL2CPP);
-        PlayerSettings.Android.targetArchitectures = AndroidArchitecture.ARM64;
-        if (PlayerSettings.Android.minSdkVersion < AndroidSdkVersions.AndroidApiLevel24)
-            PlayerSettings.Android.minSdkVersion = AndroidSdkVersions.AndroidApiLevel24;
-        PlayerSettings.defaultInterfaceOrientation = UIOrientation.Portrait;
-
-        if (EditorUserBuildSettings.activeBuildTarget != BuildTarget.Android)
-            EditorUserBuildSettings.SwitchActiveBuildTarget(BuildTargetGroup.Android, BuildTarget.Android);
-    }
-
-    const string RutaApk = "Builds/Android/SistemaSolarRA.apk";
-
-    // Compila el APK una sola vez; después solo se instala en el celular y se abre como cualquier app.
-    [MenuItem("Sistema Solar/3. Compilar APK", priority = 3)]
-    public static void CompilarAPK()
-    {
-        if (!System.IO.File.Exists(RutaEscena))
-        {
-            Debug.LogError("Falta la escena " + RutaEscena + ": usen primero el menú 1. Crear escena.");
-            if (!Application.isBatchMode)
-                EditorUtility.DisplayDialog("Falta la escena", "Usen primero el menú Sistema Solar > 1. Crear escena.", "OK");
-            return;
-        }
-        ConfigurarAndroidSinDialogo();
-        EditorUserBuildSettings.buildAppBundle = false;
-        System.IO.Directory.CreateDirectory("Builds/Android");
-        var reporte = BuildPipeline.BuildPlayer(new[] { RutaEscena }, RutaApk, BuildTarget.Android, BuildOptions.None);
-        bool ok = reporte.summary.result == UnityEditor.Build.Reporting.BuildResult.Succeeded;
-        Debug.Log("RESULTADO_BUILD: " + reporte.summary.result + " -> " + RutaApk);
-        if (Application.isBatchMode)
-        {
-            if (!ok) EditorApplication.Exit(1);
-            return;
-        }
-        if (ok) EditorUtility.RevealInFinder(RutaApk);
-        EditorUtility.DisplayDialog(ok ? "APK listo" : "Error al compilar",
-            ok ? "Se creó " + RutaApk + ".\n\nPásenlo al celular (cable, Drive o WhatsApp) e instálenlo. " +
-                 "Ya no hace falta compilar de nuevo para mostrarlo."
-               : "Revisen la consola (Window > General > Console).", "OK");
-    }
-
-    const string RutaApkVistaPrevia = "Builds/Android/SistemaSolar_VistaPrevia.apk";
-
-    // APK sin RA (no necesita Vuforia): el sistema solar en 3D con controles táctiles. Sirve para mostrarlo ya.
-    // Usa otro identificador para poder tener instaladas las dos apps a la vez.
-    public static void CompilarVistaPreviaAndroid()
-    {
-        CrearVistaPreviaPC();
-        string idOriginal = PlayerSettings.GetApplicationIdentifier(BuildTargetGroup.Android);
-        string nombreOriginal = PlayerSettings.productName;
-        ConfigurarAndroidSinDialogo();
-        PlayerSettings.SetApplicationIdentifier(BuildTargetGroup.Android, "pe.edu.unt.sistemasolarra.vistaprevia");
-        PlayerSettings.productName = "Sistema Solar 3D";
-        EditorUserBuildSettings.buildAppBundle = false;
-        System.IO.Directory.CreateDirectory("Builds/Android");
-        var reporte = BuildPipeline.BuildPlayer(new[] { RutaEscenaPC }, RutaApkVistaPrevia, BuildTarget.Android, BuildOptions.None);
-        PlayerSettings.SetApplicationIdentifier(BuildTargetGroup.Android, idOriginal);
-        PlayerSettings.productName = nombreOriginal;
-        Debug.Log("RESULTADO_BUILD: " + reporte.summary.result + " -> " + RutaApkVistaPrevia);
-        if (Application.isBatchMode && reporte.summary.result != UnityEditor.Build.Reporting.BuildResult.Succeeded)
-            EditorApplication.Exit(1);
-    }
-
     static Texture2D BuscarTextura(params string[] claves)
     {
         if (!AssetDatabase.IsValidFolder(RutaTexturas)) return null;
@@ -244,72 +174,6 @@ public static class SistemaSolarSetup
         importador.alphaSource = TextureImporterAlphaSource.FromGrayScale;
         importador.alphaIsTransparency = true;
         importador.SaveAndReimport();
-    }
-
-    static bool VuforiaImportado()
-    {
-        return System.AppDomain.CurrentDomain.GetAssemblies()
-            .Any(a => a.GetType("Vuforia.VuforiaBehaviour") != null);
-    }
-
-    // Lee la clave de licencia de "licencia-vuforia.txt" (junto a la carpeta SistemaSolarRA, fuera de git)
-    // y la pone en VuforiaConfiguration. Usa reflexión para no depender de la API de Vuforia al compilar.
-    // También se puede usar con -executeMethod SistemaSolarSetup.CargarLicenciaVuforia
-    public static bool CargarLicenciaVuforia()
-    {
-        string ruta = System.IO.Path.GetFullPath(System.IO.Path.Combine("..", "licencia-vuforia.txt"));
-        if (!System.IO.File.Exists(ruta)) { Debug.LogWarning("No existe " + ruta); return false; }
-        string clave = System.IO.File.ReadAllText(ruta).Trim();
-        if (clave.Length == 0) return false;
-
-        var tipo = System.AppDomain.CurrentDomain.GetAssemblies()
-            .Select(a => a.GetType("Vuforia.VuforiaConfiguration")).FirstOrDefault(t => t != null);
-        var config = tipo?.GetProperty("Instance")?.GetValue(null) as Object;
-        var generica = tipo?.GetProperty("Vuforia")?.GetValue(config);
-        var propClave = generica?.GetType().GetProperty("LicenseKey");
-        if (config == null || propClave == null) { Debug.LogWarning("No se encontró VuforiaConfiguration"); return false; }
-
-        propClave.SetValue(generica, clave);
-        if (string.IsNullOrEmpty(AssetDatabase.GetAssetPath(config)))
-        {
-            // Vuforia todavía no guardó su configuración (pasa si nunca se abrió en el editor)
-            System.IO.Directory.CreateDirectory("Assets/Resources");
-            AssetDatabase.CreateAsset(config, "Assets/Resources/VuforiaConfiguration.asset");
-        }
-        EditorUtility.SetDirty(config);
-        AssetDatabase.SaveAssets();
-        Debug.Log("Licencia de Vuforia cargada en " + AssetDatabase.GetAssetPath(config));
-        return true;
-    }
-
-    static GameObject CrearDesdeMenu(string menu)
-    {
-        Selection.activeGameObject = null;
-        if (!EditorApplication.ExecuteMenuItem(menu)) return null;
-        var creado = Selection.activeGameObject;
-        if (creado != null && creado.transform.parent != null) creado.transform.SetParent(null, true);
-        return creado;
-    }
-
-    // Pone "Consider target as visible if its status is: Tracked" en Default Observer Event Handler.
-    static bool FiltrarSoloTracked(GameObject multiTarget)
-    {
-        foreach (var comp in multiTarget.GetComponents<MonoBehaviour>())
-        {
-            if (comp == null || comp.GetType().Name != "DefaultObserverEventHandler") continue;
-            var so = new SerializedObject(comp);
-            var prop = so.GetIterator();
-            while (prop.NextVisible(true))
-            {
-                if (prop.propertyType != SerializedPropertyType.Enum || !prop.name.ToLower().Contains("statusfilter")) continue;
-                int indice = System.Array.IndexOf(prop.enumNames, "Tracked");
-                if (indice < 0) return false;
-                prop.enumValueIndex = indice;
-                so.ApplyModifiedProperties();
-                return true;
-            }
-        }
-        return false;
     }
 
     static Material CrearMaterial(string nombre, string shader, System.Action<Material> ajustar)

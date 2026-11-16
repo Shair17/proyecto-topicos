@@ -4,14 +4,22 @@ using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 #endif
 
-// Detecta el toque (o clic en el editor) sobre un planeta y muestra su ficha.
-// Va en cualquier objeto de la escena, por ejemplo en "GestorApp".
+// Detecta un toque corto (o clic) sobre un planeta y muestra su ficha.
+// Se elige al SOLTAR y solo si casi no se movió el dedo/mouse: arrastrar sirve para mirar alrededor.
 public class PlanetSelector : MonoBehaviour
 {
     public Camera camara;
     public InfoPanelUI panel;
 
+    const float MovimientoMaximo = 20f;   // píxeles
+    const float DuracionMaxima = 0.5f;    // segundos
+
     PlanetInfo seleccionado;
+    Vector2 inicio;
+    float tiempoInicio;
+    bool empezoSobreUI;
+
+    public PlanetInfo Seleccionado => seleccionado;
 
     void Start()
     {
@@ -20,13 +28,18 @@ public class PlanetSelector : MonoBehaviour
 
     void Update()
     {
-        if (!PresionoEstaFrame(out Vector2 posicion)) return;
+        if (Presiono(out Vector2 posicion))
+        {
+            inicio = posicion;
+            tiempoInicio = Time.unscaledTime;
+            empezoSobreUI = EventSystem.current != null && EventSystem.current.IsPointerOverGameObject(PunteroId());
+        }
 
-        // Ignorar toques sobre botones o paneles de la interfaz.
-        if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject(PunteroId())) return;
+        if (!Solto(out posicion) || empezoSobreUI) return;
+        if ((posicion - inicio).magnitude > MovimientoMaximo || Time.unscaledTime - tiempoInicio > DuracionMaxima) return;
 
         Ray rayo = camara.ScreenPointToRay(posicion);
-        if (Physics.Raycast(rayo, out RaycastHit golpe, 10f) &&
+        if (Physics.Raycast(rayo, out RaycastHit golpe, 100f) &&
             golpe.collider.TryGetComponent(out PlanetInfo planeta))
         {
             Seleccionar(planeta);
@@ -49,20 +62,46 @@ public class PlanetSelector : MonoBehaviour
         panel.Ocultar();
     }
 
-    static bool PresionoEstaFrame(out Vector2 posicion)
+    // Botón "Viajar" de la ficha: la cámara vuela hasta el planeta y lo sigue.
+    public void ViajarAlSeleccionado()
+    {
+        if (seleccionado != null && CamaraExplorador.Instancia != null)
+            CamaraExplorador.Instancia.Viajar(seleccionado.transform);
+    }
+
+    static bool Presiono(out Vector2 posicion)
     {
 #if ENABLE_INPUT_SYSTEM
         var puntero = Pointer.current;
         posicion = puntero != null ? puntero.position.ReadValue() : Vector2.zero;
         return puntero != null && puntero.press.wasPressedThisFrame;
 #else
-        if (Input.touchCount > 0 && Input.GetTouch(0).phase == TouchPhase.Began)
+        if (Input.touchCount > 0)
         {
-            posicion = Input.GetTouch(0).position;
-            return true;
+            var t = Input.GetTouch(0);
+            posicion = t.position;
+            return t.phase == TouchPhase.Began;
         }
         posicion = Input.mousePosition;
         return Input.GetMouseButtonDown(0);
+#endif
+    }
+
+    static bool Solto(out Vector2 posicion)
+    {
+#if ENABLE_INPUT_SYSTEM
+        var puntero = Pointer.current;
+        posicion = puntero != null ? puntero.position.ReadValue() : Vector2.zero;
+        return puntero != null && puntero.press.wasReleasedThisFrame;
+#else
+        if (Input.touchCount > 0)
+        {
+            var t = Input.GetTouch(0);
+            posicion = t.position;
+            return t.phase == TouchPhase.Ended;
+        }
+        posicion = Input.mousePosition;
+        return Input.GetMouseButtonUp(0);
 #endif
     }
 

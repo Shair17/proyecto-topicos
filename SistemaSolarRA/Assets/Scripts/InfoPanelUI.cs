@@ -35,6 +35,9 @@ public class InfoPanelUI : MonoBehaviour
         gameObject.SetActive(false);
     }
 
+    void OnEnable() => CamaraExplorador.fichaAbierta = true;
+    void OnDisable() => CamaraExplorador.fichaAbierta = false;
+
     IEnumerator Entrar()
     {
         if (grupo == null) grupo = GetComponent<CanvasGroup>();

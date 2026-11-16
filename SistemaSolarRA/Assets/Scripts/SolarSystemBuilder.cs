@@ -1,6 +1,6 @@
 using UnityEngine;
 
-// Construye el sistema solar como hijo de este objeto (que debe estar dentro del Multi Target del cubo).
+// Construye el sistema solar como hijo de este objeto. La cámara (CamaraExplorador) flota dentro de él.
 // Los materiales y texturas los asigna el menú "Sistema Solar" del editor; todo lo demás se crea aquí.
 public class SolarSystemBuilder : MonoBehaviour
 {
@@ -24,7 +24,7 @@ public class SolarSystemBuilder : MonoBehaviour
     public Texture2D texturaNubes;
     public Texture2D texturaLuna;
 
-    [Header("Escala (en metros; el cubo mide 0,06 m)")]
+    [Header("Escala (en metros; el sistema completo mide unos 0,5 m de radio)")]
     public float radioSistema = 0.18f;
     public float tamanoBase = 0.06f;
 
@@ -121,7 +121,7 @@ public class SolarSystemBuilder : MonoBehaviour
         }
 
         Transform linea = mostrarOrbitas ? CrearLineaOrbita(radioOrbita) : null;
-        Transform estela = mostrarEstelas ? CrearEstela(pivote, radioOrbita, diametro, datos.color) : null;
+        Transform estela = mostrarEstelas ? CrearEstela(pivote, ancla, radioOrbita, diametro, datos.color) : null;
         aparicion.Agregar(ancla, linea, estela);
     }
 
@@ -326,12 +326,16 @@ public class SolarSystemBuilder : MonoBehaviour
             float a = i * Mathf.PI * 2f / segmentos;
             linea.SetPosition(i, new Vector3(Mathf.Cos(a) * radio, 0f, Mathf.Sin(a) * radio));
         }
+        var ancho = go.AddComponent<AnchoSegunDistancia>();
+        ancho.radioOrbita = radio;
+        ancho.anchoPorMetro = 0.003f;
+        ancho.anchoMaximo = 0.0012f;
         return go.transform;
     }
 
     // Estela que sigue al planeta: un arco de su órbita que se desvanece. Cuelga del pivote, así que gira con él
     // (no deja manchas si se mueve el cubo, como pasaría con un TrailRenderer).
-    Transform CrearEstela(Transform pivote, float radio, float diametro, Color color)
+    Transform CrearEstela(Transform pivote, Transform ancla, float radio, float diametro, Color color)
     {
         if (materialOrbita == null) return null;
         const int puntos = 32;
@@ -350,6 +354,11 @@ public class SolarSystemBuilder : MonoBehaviour
             float a = arco * i / (puntos - 1);
             linea.SetPosition(i, new Vector3(Mathf.Cos(a) * radio, 0f, Mathf.Sin(a) * radio));
         }
+        // El ancho de arriba es el que se ve desde la vista general (a unos 0,4 m).
+        var ancho = go.AddComponent<AnchoSegunDistancia>();
+        ancho.referencia = ancla;
+        ancho.anchoMaximo = linea.widthMultiplier;
+        ancho.anchoPorMetro = linea.widthMultiplier / 0.4f;
         return go.transform;
     }
 
@@ -374,22 +383,22 @@ public class SolarSystemBuilder : MonoBehaviour
         aparicion.Agregar(null, pivote);
     }
 
-    // Estrellas que titilan en una cúpula alrededor del sistema: un "pedazo de espacio" sobre la mesa.
+    // Estrellas que titilan en una esfera alrededor de todo el sistema (más allá de donde llega la cámara),
+    // por delante del cielo estrellado de fondo.
     void CrearEstrellas()
     {
         if (materialAditivo == null) return;
-        var ps = Procedural.CrearParticulas("Estrellas", transform, MaterialAditivo(new Color(0.5f, 0.5f, 0.5f, 0.5f)), 500, true);
+        var ps = Procedural.CrearParticulas("Estrellas", transform, MaterialAditivo(new Color(0.5f, 0.5f, 0.5f, 0.5f)), 900, true);
         var main = ps.main;
         main.startLifetime = new ParticleSystem.MinMaxCurve(3f, 7f);
-        main.startSize = new ParticleSystem.MinMaxCurve(0.002f, 0.006f);
+        main.startSize = new ParticleSystem.MinMaxCurve(0.012f, 0.03f);
         main.startColor = new ParticleSystem.MinMaxGradient(Color.white, new Color(0.7f, 0.8f, 1f));
         var emision = ps.emission;
-        emision.rateOverTime = 70f;
+        emision.rateOverTime = 170f;
         var forma = ps.shape;
-        forma.shapeType = ParticleSystemShapeType.Hemisphere;
-        forma.rotation = new Vector3(-90f, 0f, 0f); // la cúpula apunta hacia arriba
-        forma.radius = RadioOrbita(1.34f) + 0.2f;
-        forma.radiusThickness = 0.45f;
+        forma.shapeType = ParticleSystemShapeType.Sphere;
+        forma.radius = 4f;
+        forma.radiusThickness = 0.35f;
         var color = ps.colorOverLifetime;
         color.enabled = true;
         var g = new Gradient();

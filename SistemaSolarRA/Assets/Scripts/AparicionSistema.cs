@@ -1,9 +1,8 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-// Animación de entrada: cuando aparece el cubo, el Sol "explota" desde cero y los planetas salen
-// girando hacia sus órbitas uno por uno. Se repite si el cubo estuvo oculto más de un segundo.
-// Detecta el cubo mirando si el Renderer del Sol está encendido (Vuforia lo apaga al perder el cubo).
+// Animación de entrada al abrir la app: el Sol "explota" desde cero y los planetas salen
+// girando hacia sus órbitas uno por uno. Arranca cuando el Renderer del Sol está encendido.
 public class AparicionSistema : MonoBehaviour
 {
     class Brazo

@@ -6,7 +6,7 @@ using UnityEngine.UI;
 using UnityEngine.InputSystem.UI;
 #endif
 
-// Crea toda la interfaz (Canvas, botones, slider, ficha del planeta) y conecta los scripts.
+// Crea toda la interfaz (horizontal, para PC y celular) y conecta los scripts.
 // Uso: crear un objeto vacío "GestorApp" y agregarle solo este componente.
 public class AppUIBuilder : MonoBehaviour
 {
@@ -19,38 +19,61 @@ public class AppUIBuilder : MonoBehaviour
     {
         CrearEventSystem();
         var canvas = CrearCanvas();
+        bool celular = Application.isMobilePlatform;
 
-        // Mensaje cuando no se ve el cubo
-        var buscar = CrearRect("TextoBuscar", canvas, new Vector2(0.1f, 0.45f), new Vector2(0.9f, 0.55f));
-        buscar.gameObject.AddComponent<Image>().color = colorPanel;
-        CrearTexto("Texto", buscar, "Apunta la cámara al cubo", 56, FontStyles.Bold, TextAlignmentOptions.Center);
+        // Ayuda de controles (arriba a la izquierda)
+        var ayuda = CrearRect("Ayuda", canvas, new Vector2(0.01f, 0.925f), new Vector2(celular ? 0.5f : 0.62f, 0.99f));
+        ayuda.gameObject.AddComponent<Image>().color = new Color(colorPanel.r, colorPanel.g, colorPanel.b, 0.6f);
+        var textoAyuda = CrearTexto("Texto", ayuda, celular
+                ? "Gira el celular o arrastra para mirar  ·  Toca un planeta"
+                : "WASD: moverse  ·  Q/E: bajar/subir  ·  Shift: rápido  ·  Arrastrar: mirar  ·  Clic: planeta",
+            26, FontStyles.Normal, TextAlignmentOptions.Center);
+        textoAyuda.enableAutoSizing = true;
+        textoAyuda.fontSizeMin = 16;
+        textoAyuda.fontSizeMax = 26;
+        textoAyuda.margin = new Vector4(12f, 0f, 12f, 0f);
 
-        // Controles de abajo: pausa y velocidad
-        var controles = CrearRect("Controles", canvas, new Vector2(0f, 0f), new Vector2(1f, 0.12f));
+        // Controles de abajo
+        var controles = CrearRect("Controles", canvas, new Vector2(0f, 0f), new Vector2(1f, 0.11f));
         controles.gameObject.AddComponent<Image>().color = colorPanel;
 
         var botonPausa = CrearBoton("BotonPausa", controles, "Pausar",
-            new Vector2(0.03f, 0.2f), new Vector2(0.3f, 0.8f), out TextMeshProUGUI textoPausa);
+            new Vector2(0.01f, 0.15f), new Vector2(0.13f, 0.85f), out TextMeshProUGUI textoPausa);
         var botonSonido = CrearBoton("BotonSonido", controles, "Sonido: Sí",
-            new Vector2(0.33f, 0.2f), new Vector2(0.6f, 0.8f), out TextMeshProUGUI textoSonido);
+            new Vector2(0.14f, 0.15f), new Vector2(0.27f, 0.85f), out TextMeshProUGUI textoSonido);
+        var botonGeneral = CrearBoton("BotonVistaGeneral", controles, "Vista general",
+            new Vector2(0.28f, 0.15f), new Vector2(0.42f, 0.85f), out _);
+        var botonGiro = CrearBoton("BotonGiroscopio", controles, "Giroscopio: No",
+            new Vector2(0.43f, 0.15f), new Vector2(0.58f, 0.85f), out TextMeshProUGUI textoGiro);
 
-        var etiqueta = CrearRect("EtiquetaVelocidad", controles, new Vector2(0.64f, 0.55f), new Vector2(0.97f, 0.9f));
-        CrearTexto("Texto", etiqueta, "Velocidad", 40, FontStyles.Normal, TextAlignmentOptions.Center);
-        var slider = CrearSlider(controles, new Vector2(0.64f, 0.2f), new Vector2(0.97f, 0.5f));
+        var etiqueta = CrearRect("EtiquetaVelocidad", controles, new Vector2(0.62f, 0.55f), new Vector2(0.98f, 0.95f));
+        CrearTexto("Texto", etiqueta, "Velocidad de las órbitas", 32, FontStyles.Normal, TextAlignmentOptions.Center);
+        var slider = CrearSlider(controles, new Vector2(0.62f, 0.15f), new Vector2(0.98f, 0.5f));
 
-        // Ficha del planeta (arriba)
-        var panelInfo = CrearRect("PanelInfo", canvas, new Vector2(0.04f, 0.6f), new Vector2(0.96f, 0.97f));
+        // Botones para avanzar en el celular (en PC se usa el teclado)
+        if (celular)
+        {
+            CrearBoton("BotonAvanzar", canvas, "Avanzar",
+                new Vector2(0.01f, 0.4f), new Vector2(0.12f, 0.56f), out _).gameObject.AddComponent<BotonMantener>().valor = 1f;
+            CrearBoton("BotonRetroceder", canvas, "Retroceder",
+                new Vector2(0.01f, 0.22f), new Vector2(0.12f, 0.38f), out _).gameObject.AddComponent<BotonMantener>().valor = -1f;
+        }
+
+        // Ficha del planeta (a la derecha)
+        var panelInfo = CrearRect("PanelInfo", canvas, new Vector2(0.64f, 0.13f), new Vector2(0.99f, 0.97f));
         panelInfo.gameObject.AddComponent<Image>().color = colorPanel;
-        var titulo = CrearTexto("Titulo", CrearRect("ZonaTitulo", panelInfo, new Vector2(0.05f, 0.83f), new Vector2(0.8f, 0.97f)),
-            "", 72, FontStyles.Bold, TextAlignmentOptions.Left);
+        var titulo = CrearTexto("Titulo", CrearRect("ZonaTitulo", panelInfo, new Vector2(0.06f, 0.86f), new Vector2(0.8f, 0.98f)),
+            "", 64, FontStyles.Bold, TextAlignmentOptions.Left);
         titulo.color = colorBoton;
-        var cuerpo = CrearTexto("Cuerpo", CrearRect("ZonaCuerpo", panelInfo, new Vector2(0.05f, 0.04f), new Vector2(0.95f, 0.82f)),
-            "", 42, FontStyles.Normal, TextAlignmentOptions.TopLeft);
+        var cuerpo = CrearTexto("Cuerpo", CrearRect("ZonaCuerpo", panelInfo, new Vector2(0.06f, 0.17f), new Vector2(0.95f, 0.85f)),
+            "", 36, FontStyles.Normal, TextAlignmentOptions.TopLeft);
         cuerpo.enableAutoSizing = true;
-        cuerpo.fontSizeMin = 24;
-        cuerpo.fontSizeMax = 42;
+        cuerpo.fontSizeMin = 20;
+        cuerpo.fontSizeMax = 36;
         var botonCerrar = CrearBoton("BotonCerrar", panelInfo, "X",
-            new Vector2(0.84f, 0.84f), new Vector2(0.96f, 0.97f), out _);
+            new Vector2(0.84f, 0.87f), new Vector2(0.96f, 0.98f), out _);
+        var botonViajar = CrearBoton("BotonViajar", panelInfo, "Viajar hasta aquí",
+            new Vector2(0.06f, 0.03f), new Vector2(0.94f, 0.14f), out _);
         // Franja del color del planeta en el borde izquierdo de la ficha
         var acento = CrearRect("Acento", panelInfo, new Vector2(0f, 0f), new Vector2(0.015f, 1f)).gameObject.AddComponent<Image>();
 
@@ -71,13 +94,36 @@ public class AppUIBuilder : MonoBehaviour
         var control = gameObject.AddComponent<SolarSystemController>();
         control.textoBotonPausa = textoPausa;
 
-        var seguimiento = gameObject.AddComponent<CubeTrackingUI>();
-        seguimiento.mensajeBuscar = buscar.gameObject;
-        seguimiento.controles = controles.gameObject;
-
         botonPausa.onClick.AddListener(control.AlternarPausa);
         botonCerrar.onClick.AddListener(selector.Deseleccionar);
+        botonViajar.onClick.AddListener(selector.ViajarAlSeleccionado);
         slider.onValueChanged.AddListener(control.CambiarVelocidad);
+
+        botonGeneral.onClick.AddListener(() =>
+        {
+            selector.Deseleccionar();
+            if (CamaraExplorador.Instancia != null) CamaraExplorador.Instancia.VistaGeneral();
+        });
+
+        this.botonGiro = botonGiro;
+        this.textoGiro = textoGiro;
+    }
+
+    Button botonGiro;
+    TextMeshProUGUI textoGiro;
+
+    // En Start (y no en Awake) porque la cámara ya tiene que estar preparada.
+    void Start()
+    {
+        // El botón del giroscopio solo aparece si el dispositivo tiene uno (no en PC).
+        var camara = CamaraExplorador.Instancia;
+        if (camara != null && camara.GiroscopioDisponible)
+        {
+            botonGiro.onClick.AddListener(() => textoGiro.text = camara.AlternarGiroscopio() ? "Giroscopio: Sí" : "Giroscopio: No");
+            // En el celular empieza encendido: girar el teléfono es la forma más natural de mirar.
+            textoGiro.text = camara.AlternarGiroscopio() ? "Giroscopio: Sí" : "Giroscopio: No";
+        }
+        else botonGiro.gameObject.SetActive(false);
     }
 
     static Camera BuscarCamara()
@@ -103,7 +149,7 @@ public class AppUIBuilder : MonoBehaviour
         go.GetComponent<Canvas>().renderMode = RenderMode.ScreenSpaceOverlay;
         var escala = go.GetComponent<CanvasScaler>();
         escala.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-        escala.referenceResolution = new Vector2(1080f, 1920f);
+        escala.referenceResolution = new Vector2(1920f, 1080f);
         escala.matchWidthOrHeight = 0.5f;
         return (RectTransform)go.transform;
     }
@@ -141,11 +187,11 @@ public class AppUIBuilder : MonoBehaviour
         imagen.color = colorBoton;
         var boton = rt.gameObject.AddComponent<Button>();
         boton.targetGraphic = imagen;
-        etiqueta = CrearTexto("Texto", rt, texto, 48, FontStyles.Bold, TextAlignmentOptions.Center);
+        etiqueta = CrearTexto("Texto", rt, texto, 40, FontStyles.Bold, TextAlignmentOptions.Center);
         etiqueta.color = colorTextoBoton;
         etiqueta.enableAutoSizing = true;
-        etiqueta.fontSizeMin = 24;
-        etiqueta.fontSizeMax = 48;
+        etiqueta.fontSizeMin = 18;
+        etiqueta.fontSizeMax = 40;
         etiqueta.margin = new Vector4(8f, 0f, 8f, 0f);
         return boton;
     }
@@ -166,7 +212,7 @@ public class AppUIBuilder : MonoBehaviour
 
         // Perilla más grande para el dedo
         var perilla = go.GetComponent<Slider>().handleRect;
-        if (perilla != null) perilla.sizeDelta = new Vector2(60f, 30f);
+        if (perilla != null) perilla.sizeDelta = new Vector2(50f, 30f);
 
         var slider = go.GetComponent<Slider>();
         slider.minValue = 0.1f;
