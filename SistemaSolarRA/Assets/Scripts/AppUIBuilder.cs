@@ -15,40 +15,52 @@ public class AppUIBuilder : MonoBehaviour
     public Color colorBoton = new Color(0.95f, 0.71f, 0.2f, 1f);
     public Color colorTextoBoton = new Color(0.08f, 0.12f, 0.24f, 1f);
 
+    Button botonGiro;
+    TextMeshProUGUI textoGiro;
+
     void Awake()
     {
+        Screen.sleepTimeout = SleepTimeout.NeverSleep; // que el celular no apague la pantalla durante la exposición
         CrearEventSystem();
-        var canvas = CrearCanvas();
+        var canvas = CrearCanvas("Canvas", 0);
         bool celular = Application.isMobilePlatform;
 
-        // Ayuda de controles (arriba a la izquierda)
-        var ayuda = CrearRect("Ayuda", canvas, new Vector2(0.01f, 0.925f), new Vector2(celular ? 0.5f : 0.62f, 0.99f));
+        // ---------- Arriba: ayuda (izquierda) y distancia real al Sol (derecha) ----------
+        var ayuda = CrearRect("Ayuda", canvas, new Vector2(0.01f, 0.925f), new Vector2(0.6f, 0.99f));
         ayuda.gameObject.AddComponent<Image>().color = new Color(colorPanel.r, colorPanel.g, colorPanel.b, 0.6f);
         var textoAyuda = CrearTexto("Texto", ayuda, celular
                 ? "Gira el celular o arrastra para mirar  ·  Toca un planeta"
                 : "WASD: moverse  ·  Q/E: bajar/subir  ·  Shift: rápido  ·  Arrastrar: mirar  ·  Clic: planeta",
             26, FontStyles.Normal, TextAlignmentOptions.Center);
-        textoAyuda.enableAutoSizing = true;
-        textoAyuda.fontSizeMin = 16;
-        textoAyuda.fontSizeMax = 26;
+        AutoTamano(textoAyuda, 16, 26);
         textoAyuda.margin = new Vector4(12f, 0f, 12f, 0f);
 
-        // Controles de abajo
+        var distancia = CrearRect("Distancia", canvas, new Vector2(0.62f, 0.925f), new Vector2(0.99f, 0.99f));
+        distancia.gameObject.AddComponent<Image>().color = new Color(colorPanel.r, colorPanel.g, colorPanel.b, 0.6f);
+        var textoDistancia = CrearTexto("Texto", distancia, "", 26, FontStyles.Normal, TextAlignmentOptions.Center);
+        AutoTamano(textoDistancia, 16, 26);
+
+        // ---------- Abajo: botones y velocidad ----------
         var controles = CrearRect("Controles", canvas, new Vector2(0f, 0f), new Vector2(1f, 0.11f));
         controles.gameObject.AddComponent<Image>().color = colorPanel;
+        int columna = 0;
+        Button BotonBarra(string nombre, string texto, out TextMeshProUGUI etiqueta)
+        {
+            float x = 0.006f + columna++ * 0.092f;
+            return CrearBoton(nombre, controles, texto, new Vector2(x, 0.15f), new Vector2(x + 0.086f, 0.85f), out etiqueta);
+        }
+        var botonPausa = BotonBarra("BotonPausa", "Pausar", out var textoPausa);
+        var botonSonido = BotonBarra("BotonSonido", "Sonido: Sí", out var textoSonido);
+        var botonNombres = BotonBarra("BotonNombres", "Nombres: Sí", out var textoNombres);
+        var botonGeneral = BotonBarra("BotonVistaGeneral", "Vista general", out _);
+        var botonRecorrido = BotonBarra("BotonRecorrido", "Recorrido", out var textoRecorrido);
+        var botonQuiz = BotonBarra("BotonQuiz", "Quiz", out _);
+        var botonVisor = BotonBarra("BotonVisor", "Visor VR", out _);
+        botonGiro = BotonBarra("BotonGiroscopio", "Giroscopio: No", out textoGiro);
 
-        var botonPausa = CrearBoton("BotonPausa", controles, "Pausar",
-            new Vector2(0.01f, 0.15f), new Vector2(0.13f, 0.85f), out TextMeshProUGUI textoPausa);
-        var botonSonido = CrearBoton("BotonSonido", controles, "Sonido: Sí",
-            new Vector2(0.14f, 0.15f), new Vector2(0.27f, 0.85f), out TextMeshProUGUI textoSonido);
-        var botonGeneral = CrearBoton("BotonVistaGeneral", controles, "Vista general",
-            new Vector2(0.28f, 0.15f), new Vector2(0.42f, 0.85f), out _);
-        var botonGiro = CrearBoton("BotonGiroscopio", controles, "Giroscopio: No",
-            new Vector2(0.43f, 0.15f), new Vector2(0.58f, 0.85f), out TextMeshProUGUI textoGiro);
-
-        var etiqueta = CrearRect("EtiquetaVelocidad", controles, new Vector2(0.62f, 0.55f), new Vector2(0.98f, 0.95f));
-        CrearTexto("Texto", etiqueta, "Velocidad de las órbitas", 32, FontStyles.Normal, TextAlignmentOptions.Center);
-        var slider = CrearSlider(controles, new Vector2(0.62f, 0.15f), new Vector2(0.98f, 0.5f));
+        var etiqueta = CrearRect("EtiquetaVelocidad", controles, new Vector2(0.76f, 0.55f), new Vector2(0.99f, 0.95f));
+        CrearTexto("Texto", etiqueta, "Velocidad de las órbitas", 30, FontStyles.Normal, TextAlignmentOptions.Center);
+        var slider = CrearSlider(controles, new Vector2(0.77f, 0.15f), new Vector2(0.98f, 0.5f));
 
         // Botones para avanzar en el celular (en PC se usa el teclado)
         if (celular)
@@ -59,25 +71,54 @@ public class AppUIBuilder : MonoBehaviour
                 new Vector2(0.01f, 0.22f), new Vector2(0.12f, 0.38f), out _).gameObject.AddComponent<BotonMantener>().valor = -1f;
         }
 
-        // Ficha del planeta (a la derecha)
-        var panelInfo = CrearRect("PanelInfo", canvas, new Vector2(0.64f, 0.13f), new Vector2(0.99f, 0.97f));
+        // ---------- Ficha del planeta (derecha) ----------
+        var panelInfo = CrearRect("PanelInfo", canvas, new Vector2(0.64f, 0.13f), new Vector2(0.99f, 0.905f));
         panelInfo.gameObject.AddComponent<Image>().color = colorPanel;
         var titulo = CrearTexto("Titulo", CrearRect("ZonaTitulo", panelInfo, new Vector2(0.06f, 0.86f), new Vector2(0.8f, 0.98f)),
-            "", 64, FontStyles.Bold, TextAlignmentOptions.Left);
+            "", 60, FontStyles.Bold, TextAlignmentOptions.Left);
         titulo.color = colorBoton;
+        AutoTamano(titulo, 30, 60);
         var cuerpo = CrearTexto("Cuerpo", CrearRect("ZonaCuerpo", panelInfo, new Vector2(0.06f, 0.17f), new Vector2(0.95f, 0.85f)),
-            "", 36, FontStyles.Normal, TextAlignmentOptions.TopLeft);
-        cuerpo.enableAutoSizing = true;
-        cuerpo.fontSizeMin = 20;
-        cuerpo.fontSizeMax = 36;
+            "", 34, FontStyles.Normal, TextAlignmentOptions.TopLeft);
+        AutoTamano(cuerpo, 18, 34);
         var botonCerrar = CrearBoton("BotonCerrar", panelInfo, "X",
             new Vector2(0.84f, 0.87f), new Vector2(0.96f, 0.98f), out _);
         var botonViajar = CrearBoton("BotonViajar", panelInfo, "Viajar hasta aquí",
             new Vector2(0.06f, 0.03f), new Vector2(0.94f, 0.14f), out _);
-        // Franja del color del planeta en el borde izquierdo de la ficha
         var acento = CrearRect("Acento", panelInfo, new Vector2(0f, 0f), new Vector2(0.015f, 1f)).gameObject.AddComponent<Image>();
 
-        // Scripts de la app
+        // ---------- Panel del quiz (mismo lugar que la ficha) ----------
+        var panelQuiz = CrearRect("PanelQuiz", canvas, new Vector2(0.64f, 0.13f), new Vector2(0.99f, 0.905f));
+        panelQuiz.gameObject.AddComponent<Image>().color = colorPanel;
+        var tituloQuiz = CrearTexto("Titulo", CrearRect("ZonaTitulo", panelQuiz, new Vector2(0.06f, 0.88f), new Vector2(0.8f, 0.98f)),
+            "", 40, FontStyles.Bold, TextAlignmentOptions.Left);
+        tituloQuiz.color = colorBoton;
+        var preguntaQuiz = CrearTexto("Pregunta", CrearRect("ZonaPregunta", panelQuiz, new Vector2(0.06f, 0.66f), new Vector2(0.94f, 0.87f)),
+            "", 36, FontStyles.Bold, TextAlignmentOptions.TopLeft);
+        AutoTamano(preguntaQuiz, 20, 36);
+        var opciones = new Button[3];
+        var textosOpciones = new TextMeshProUGUI[3];
+        for (int i = 0; i < 3; i++)
+        {
+            float y = 0.54f - i * 0.12f;
+            opciones[i] = CrearBoton("Opcion" + i, panelQuiz, "", new Vector2(0.06f, y), new Vector2(0.94f, y + 0.1f), out textosOpciones[i]);
+        }
+        var retro = CrearTexto("Retro", CrearRect("ZonaRetro", panelQuiz, new Vector2(0.06f, 0.15f), new Vector2(0.94f, 0.3f)),
+            "", 26, FontStyles.Normal, TextAlignmentOptions.TopLeft);
+        AutoTamano(retro, 16, 26);
+        var botonSiguiente = CrearBoton("BotonSiguiente", panelQuiz, "Siguiente",
+            new Vector2(0.06f, 0.03f), new Vector2(0.62f, 0.13f), out var textoSiguiente);
+        var botonCerrarQuiz = CrearBoton("BotonCerrarQuiz", panelQuiz, "Salir",
+            new Vector2(0.66f, 0.03f), new Vector2(0.94f, 0.13f), out _);
+        CrearRect("Acento", panelQuiz, new Vector2(0f, 0f), new Vector2(0.015f, 1f)).gameObject.AddComponent<Image>().color = colorBoton;
+
+        // ---------- Modo visor: Canvas aparte con solo el botón para salir ----------
+        var canvasVisor = CrearCanvas("CanvasVisor", 10);
+        var botonSalirVisor = CrearBoton("BotonSalirVisor", canvasVisor, "Salir del visor",
+            new Vector2(0.43f, 0.93f), new Vector2(0.57f, 0.995f), out _);
+        canvasVisor.gameObject.SetActive(false);
+
+        // ---------- Scripts de la app ----------
         var info = panelInfo.gameObject.AddComponent<InfoPanelUI>();
         info.titulo = titulo;
         info.cuerpo = cuerpo;
@@ -89,28 +130,66 @@ public class AppUIBuilder : MonoBehaviour
         selector.camara = BuscarCamara();
 
         var sonido = gameObject.AddComponent<SonidoEspacial>();
-        botonSonido.onClick.AddListener(() => textoSonido.text = sonido.Alternar() ? "Sonido: Sí" : "Sonido: No");
-
         var control = gameObject.AddComponent<SolarSystemController>();
         control.textoBotonPausa = textoPausa;
+        var etiquetas = gameObject.AddComponent<EtiquetasPlanetas>();
+        gameObject.AddComponent<IndicadorDistancia>().texto = textoDistancia;
 
+        var recorrido = gameObject.AddComponent<RecorridoGuiado>();
+        recorrido.selector = selector;
+        recorrido.textoEstado = textoAyuda;
+        recorrido.alCambiar = activo => textoRecorrido.text = activo ? "Detener" : "Recorrido";
+
+        var quiz = gameObject.AddComponent<QuizPlanetas>();
+        quiz.panel = panelQuiz.gameObject;
+        quiz.titulo = tituloQuiz;
+        quiz.pregunta = preguntaQuiz;
+        quiz.opciones = opciones;
+        quiz.textosOpciones = textosOpciones;
+        quiz.retroalimentacion = retro;
+        quiz.botonSiguiente = botonSiguiente;
+        quiz.textoSiguiente = textoSiguiente;
+        quiz.selector = selector;
+        quiz.colorNormal = colorBoton;
+        panelQuiz.gameObject.SetActive(false);
+
+        var visor = gameObject.AddComponent<ModoVisor>();
+        visor.canvasNormal = canvas.GetComponent<Canvas>();
+        visor.interfazVisor = canvasVisor.gameObject;
+        visor.selector = selector;
+        visor.quiz = quiz;
+        var builder = FindObjectOfType<SolarSystemBuilder>();
+        if (builder != null) visor.materialAditivo = builder.materialAditivo;
+
+        // ---------- Conexiones ----------
         botonPausa.onClick.AddListener(control.AlternarPausa);
+        botonSonido.onClick.AddListener(() => textoSonido.text = sonido.Alternar() ? "Sonido: Sí" : "Sonido: No");
+        botonNombres.onClick.AddListener(() => textoNombres.text = etiquetas.Alternar() ? "Nombres: Sí" : "Nombres: No");
         botonCerrar.onClick.AddListener(selector.Deseleccionar);
         botonViajar.onClick.AddListener(selector.ViajarAlSeleccionado);
         slider.onValueChanged.AddListener(control.CambiarVelocidad);
 
         botonGeneral.onClick.AddListener(() =>
         {
+            recorrido.Detener();
             selector.Deseleccionar();
             if (CamaraExplorador.Instancia != null) CamaraExplorador.Instancia.VistaGeneral();
         });
-
-        this.botonGiro = botonGiro;
-        this.textoGiro = textoGiro;
+        botonRecorrido.onClick.AddListener(() =>
+        {
+            if (quiz.Activo) quiz.Cerrar();
+            recorrido.Alternar();
+        });
+        botonQuiz.onClick.AddListener(() =>
+        {
+            recorrido.Detener();
+            if (quiz.Activo) quiz.Cerrar();
+            else quiz.Iniciar();
+        });
+        botonCerrarQuiz.onClick.AddListener(quiz.Cerrar);
+        botonVisor.onClick.AddListener(() => visor.Entrar());
+        botonSalirVisor.onClick.AddListener(visor.Salir);
     }
-
-    Button botonGiro;
-    TextMeshProUGUI textoGiro;
 
     // En Start (y no en Awake) porque la cámara ya tiene que estar preparada.
     void Start()
@@ -124,6 +203,14 @@ public class AppUIBuilder : MonoBehaviour
             textoGiro.text = camara.AlternarGiroscopio() ? "Giroscopio: Sí" : "Giroscopio: No";
         }
         else botonGiro.gameObject.SetActive(false);
+    }
+
+    // El texto del botón del giroscopio también cambia cuando el modo visor lo enciende o apaga.
+    void LateUpdate()
+    {
+        var camara = CamaraExplorador.Instancia;
+        if (camara != null && botonGiro != null && botonGiro.gameObject.activeSelf)
+            textoGiro.text = camara.GiroscopioActivo ? "Giroscopio: Sí" : "Giroscopio: No";
     }
 
     static Camera BuscarCamara()
@@ -143,10 +230,12 @@ public class AppUIBuilder : MonoBehaviour
 #endif
     }
 
-    RectTransform CrearCanvas()
+    static RectTransform CrearCanvas(string nombre, int orden)
     {
-        var go = new GameObject("Canvas", typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
-        go.GetComponent<Canvas>().renderMode = RenderMode.ScreenSpaceOverlay;
+        var go = new GameObject(nombre, typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
+        var canvas = go.GetComponent<Canvas>();
+        canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+        canvas.sortingOrder = orden;
         var escala = go.GetComponent<CanvasScaler>();
         escala.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
         escala.referenceResolution = new Vector2(1920f, 1080f);
@@ -179,6 +268,13 @@ public class AppUIBuilder : MonoBehaviour
         return tmp;
     }
 
+    static void AutoTamano(TextMeshProUGUI tmp, float minimo, float maximo)
+    {
+        tmp.enableAutoSizing = true;
+        tmp.fontSizeMin = minimo;
+        tmp.fontSizeMax = maximo;
+    }
+
     Button CrearBoton(string nombre, Transform padre, string texto, Vector2 anclaMin, Vector2 anclaMax,
         out TextMeshProUGUI etiqueta)
     {
@@ -187,12 +283,10 @@ public class AppUIBuilder : MonoBehaviour
         imagen.color = colorBoton;
         var boton = rt.gameObject.AddComponent<Button>();
         boton.targetGraphic = imagen;
-        etiqueta = CrearTexto("Texto", rt, texto, 40, FontStyles.Bold, TextAlignmentOptions.Center);
+        etiqueta = CrearTexto("Texto", rt, texto, 34, FontStyles.Bold, TextAlignmentOptions.Center);
         etiqueta.color = colorTextoBoton;
-        etiqueta.enableAutoSizing = true;
-        etiqueta.fontSizeMin = 18;
-        etiqueta.fontSizeMax = 40;
-        etiqueta.margin = new Vector4(8f, 0f, 8f, 0f);
+        AutoTamano(etiqueta, 14, 34);
+        etiqueta.margin = new Vector4(6f, 0f, 6f, 0f);
         return boton;
     }
 

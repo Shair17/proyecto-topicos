@@ -35,10 +35,55 @@ public class SonidoEspacial : MonoBehaviour
         fuenteEfectos.volume = volumenEfectos;
         clipToque = CrearToque();
         clipAparicion = CrearAparicion();
+        clipCorrecto = CrearArpegio("Correcto", new[] { 784f, 988f, 1175f, 1568f }, 0.09f);
+        clipIncorrecto = CrearZumbido();
     }
+
+    AudioClip clipCorrecto, clipIncorrecto;
 
     public void Toque() { if (Activo) fuenteEfectos.PlayOneShot(clipToque); }
     public void Aparicion() { if (Activo) fuenteEfectos.PlayOneShot(clipAparicion); }
+    public void Correcto() { if (Activo) fuenteEfectos.PlayOneShot(clipCorrecto); }
+    public void Incorrecto() { if (Activo) fuenteEfectos.PlayOneShot(clipIncorrecto); }
+
+    // Notas que suben una tras otra (acierto en el quiz).
+    static AudioClip CrearArpegio(string nombre, float[] notas, float separacion)
+    {
+        float segundos = separacion * notas.Length + 0.6f;
+        int n = (int)(Frecuencia * segundos);
+        var datos = new float[n];
+        for (int k = 0; k < notas.Length; k++)
+        {
+            int inicio = (int)(Frecuencia * separacion * k);
+            for (int i = inicio; i < n; i++)
+            {
+                float t = (i - inicio) / (float)Frecuencia;
+                float env = Mathf.Exp(-t * 6f) * Mathf.Clamp01(t * 300f);
+                datos[i] += env * 0.22f * (Mathf.Sin(2f * Mathf.PI * notas[k] * t) + 0.3f * Mathf.Sin(4f * Mathf.PI * notas[k] * t));
+            }
+        }
+        var clip = AudioClip.Create(nombre, n, 1, Frecuencia, false);
+        clip.SetData(datos, 0);
+        return clip;
+    }
+
+    // Dos tonos graves que bajan (error en el quiz).
+    static AudioClip CrearZumbido()
+    {
+        int n = (int)(Frecuencia * 0.55f);
+        var datos = new float[n];
+        for (int i = 0; i < n; i++)
+        {
+            float t = i / (float)Frecuencia;
+            float f = t < 0.22f ? 220f : 165f;
+            float env = Mathf.Clamp01(t * 200f) * Mathf.Clamp01((0.55f - t) * 12f);
+            float onda = Mathf.Sin(2f * Mathf.PI * f * t) + 0.4f * Mathf.Sign(Mathf.Sin(2f * Mathf.PI * f * t));
+            datos[i] = onda * env * 0.18f;
+        }
+        var clip = AudioClip.Create("Incorrecto", n, 1, Frecuencia, false);
+        clip.SetData(datos, 0);
+        return clip;
+    }
 
     public bool Alternar()
     {

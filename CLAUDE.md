@@ -31,11 +31,23 @@ Responder siempre en **español**. El usuario es estudiante de Informática (UNT
     - Ficha a la derecha con el botón "Viajar hasta aquí".
     - En el celular también crea `BotonMantener` (Avanzar y Retroceder).
     - El giroscopio se conecta en `Start` y en el celular empieza encendido.
-  - `SolarSystemBuilder`: crea el sistema en tiempo de ejecución desde `PlanetData`. Las estrellas forman una esfera de radio 4.
+  - `SolarSystemBuilder`: crea el sistema en tiempo de ejecución desde `PlanetData`. Las estrellas forman una esfera de radio 4. `CrearCometa` arma el cometa: Cometa (plano inclinado 18°) > ancla > núcleo. Tiene coma con `EmitirFija` y una cola de partículas en espacio World. `RadioOrbita` es público.
+  - Funciones agregadas el 2026-11-16 (todas las crea y conecta `AppUIBuilder` sobre `GestorApp`):
+    - `ModoVisor`: dos cámaras hijas de la principal (`CopyFrom`, viewport 0–0,5 y 0,5–1, separación 0,0025, FOV 75).
+      - La cámara principal se apaga (`enabled = false`) y se oculta el Canvas normal; aparece `CanvasVisor` con el botón "Salir del visor".
+      - Mira (quad aditivo) y `TextMeshPro` a 0,05 m frente a la cámara.
+      - Raycast al centro: tras 2 s de mirada viaja al planeta. Un toque corto viaja de inmediato; tocando al vacío vuelve a la vista general. Esc sale.
+      - Enciende el giroscopio si existe y luego restaura su estado anterior.
+    - `RecorridoGuiado`: corrutina que recorre Sol → … → Neptuno → Cometa. Se detiene si `CamaraExplorador.Objetivo` deja de ser el planeta actual. Escribe su avance en el texto de ayuda.
+    - `QuizPlanetas`: banco de 10 preguntas, de las que juega 8. Las respuestas son nombres de cuerpos de la escena, para poder viajar a ellos. Desactiva `PlanetSelector` mientras está abierto. Conecta los botones en `Start` y `Responder` es público (lo usa la captura).
+    - `Cometa`: órbita elíptica con la segunda ley de Kepler y retrógrada. La cola apunta lejos del Sol y su emisión depende de la distancia.
+    - `EtiquetasPlanetas`: TMP 3D por cada `PlanetInfo`, que mira a la cámara con escala = distancia × 0,2. Se oculta cuando el planeta llena la pantalla.
+    - `IndicadorDistancia`: interpola el radio de la escena a UA reales (más allá de Neptuno extrapola: la cámara inicial marca unos 85 UA). Formatea los números a mano, sin `CultureInfo("es-ES")`.
+    - `SonidoEspacial` tiene `Correcto()` e `Incorrecto()`. `PlanetData.Cometa()` tiene los datos del Halley.
   - `AnchoSegunDistancia`: ajusta el ancho de las órbitas y estelas según la distancia a la cámara.
   - `PlanetOrbit`, `PlanetInfo` (crece y brilla), `InfoPanelUI`, `SolarSystemController`, `Procedural`, `SonidoEspacial` (audio con `AudioClip.Create`).
   - `AparicionSistema`: animación de entrada. Arranca cuando `Renderer.enabled` del Sol está encendido, es decir, al iniciar.
-  - `CapturaAutomatica`: solo actúa si el `.exe` se abre con `-capturas <carpeta>`. Guarda capturas de 1280x720: aparición, sistema, viajes a la Tierra, Saturno y el Sol, y vista general.
+  - `CapturaAutomatica`: solo actúa si el `.exe` se abre con `-capturas <carpeta>`. Guarda 10 capturas de 1280x720 (aparición, sistema, Tierra, Saturno, Sol, cometa, quiz, respuesta, visor y vista general) en unos 27 s. Si el usuario toca el teclado mientras corre, la cámara se mueve.
 - `Assets/Shaders/Atmosfera.shader`: halo de atmósfera.
 - `Assets/Texturas`: texturas 2k de Solar System Scope (CC BY 4.0). `estrellas` se usa como skybox panorámico.
 - `Assets/Editor/SistemaSolarSetup.cs`: menú **Sistema Solar** con tres opciones. `CompilarPC` y `CompilarAPK` crean la escena si falta.
@@ -68,12 +80,13 @@ No hay tests ni linter: se verifica compilando y con las capturas.
 4. El Sol es la única luz: una luz puntual con rango escalado por `AparicionSistema`, más una luz ambiental baja.
 
 ## Estado (al 2026-11-16)
-- La versión VR **compila sin errores** (.exe y APK). Se revisó con capturas: vista general, viaje a la Tierra (lado de día), a Saturno y al Sol.
-- Sin probar en un celular real: el giroscopio (la conversión `Euler(90,0,0) * (x, y, -z, -w)` en LandscapeLeft), los botones Avanzar/Retroceder, el pellizco y el rendimiento.
+- La versión VR **compila sin errores** (.exe y APK) con: visor VR, recorrido, quiz, cometa, nombres y distancia real. Se revisó todo con capturas.
+- Sin probar en un celular real: el giroscopio (la conversión `Euler(90,0,0) * (x, y, -z, -w)` en LandscapeLeft), el modo visor dentro de un Cardboard (sin corrección de distorsión), los botones Avanzar/Retroceder, el pellizco y el rendimiento (unas 2200 partículas).
+- La versión VR está en un commit local de `main`. No se ha subido nada a GitHub: preguntar antes de hacer push.
 
 ## Próximos pasos
-1. Que el usuario pruebe el `.exe` y el APK y cuente cómo le va, en especial el giroscopio.
-2. Extras ofrecidos: modo Cardboard (RV inmersiva), recorrido guiado, quiz, narración, escala real.
+1. Que el usuario pruebe el `.exe` y el APK y cuente cómo le va, en especial el giroscopio y el visor.
+2. Extras que quedan: narración, escala real y corrección de lentes del Cardboard.
 3. Exposición: actualizar las diapositivas (de RA a RV), agregar referencias (NASA, Solar System Scope) y llevar el `.exe`, el APK y un video de respaldo.
 
 ## Si se abre en otra computadora

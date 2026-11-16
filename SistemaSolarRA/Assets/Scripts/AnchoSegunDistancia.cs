@@ -21,9 +21,10 @@ public class AnchoSegunDistancia : MonoBehaviour
 
     void LateUpdate()
     {
+        // La cámara del explorador (en el modo visor se apaga, pero sigue moviéndose con los dos "ojos").
         if (camara == null)
         {
-            camara = Camera.main;
+            camara = CamaraExplorador.Instancia != null ? CamaraExplorador.Instancia.GetComponent<Camera>() : Camera.main;
             if (camara == null) return;
         }
         Vector3 posCamara = camara.transform.position;

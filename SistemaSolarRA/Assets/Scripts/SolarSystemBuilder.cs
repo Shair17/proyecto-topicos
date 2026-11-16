@@ -34,6 +34,7 @@ public class SolarSystemBuilder : MonoBehaviour
     public bool mostrarAsteroides = true;
     public bool mostrarEstrellas = true;
     public bool mostrarLuna = true;
+    public bool mostrarCometa = true;
     [Tooltip("Apaga las luces direccionales de la escena para que el Sol sea la única luz (lado de día y de noche).")]
     public bool apagarLucesDireccionales = true;
     public Color luzAmbiente = new Color(0.1f, 0.1f, 0.13f);
@@ -54,6 +55,7 @@ public class SolarSystemBuilder : MonoBehaviour
             CrearCuerpo(Planetas[i], i);
         if (mostrarAsteroides) CrearCinturonAsteroides();
         if (mostrarEstrellas) CrearEstrellas();
+        if (mostrarCometa) CrearCometa();
 
         aparicion.Configurar(Sol, luzSol);
     }
@@ -125,8 +127,8 @@ public class SolarSystemBuilder : MonoBehaviour
         aparicion.Agregar(ancla, linea, estela);
     }
 
-    // Las órbitas empiezan fuera del Sol (que es un poco más grande que el cubo).
-    float RadioOrbita(float relativo)
+    // Las órbitas empiezan fuera del Sol. Público: IndicadorDistancia lo usa para convertir a distancias reales.
+    public float RadioOrbita(float relativo)
     {
         if (relativo == 0f) return 0f;
         float radioSol = Planetas[0].tamanoRelativo * tamanoBase * 0.5f;
@@ -290,6 +292,55 @@ public class SolarSystemBuilder : MonoBehaviour
         var info = luna.gameObject.AddComponent<PlanetInfo>();
         info.datos = datos;
         CrearHalo(info, luna, diametro * 3f, datos.color);
+    }
+
+    // Cometa Halley: núcleo pequeño con un brillo azulado (coma) y una cola de partículas que deja atrás.
+    void CrearCometa()
+    {
+        var datos = PlanetData.Cometa();
+        float diametro = datos.tamanoRelativo * tamanoBase;
+
+        var plano = new GameObject("Cometa").transform;
+        plano.SetParent(transform, false);
+        plano.localRotation = Quaternion.Euler(18f, 40f, 0f); // su órbita está inclinada respecto a la de los planetas
+        var ancla = new GameObject("Posicion_Cometa").transform;
+        ancla.SetParent(plano, false);
+
+        var nucleo = CrearEsfera(datos.nombre, ancla, diametro, 0f);
+        AsignarMaterial(nucleo, false, datos.color, texturaLuna);
+        AgrandarZonaDeToque(nucleo, diametro);
+        var info = nucleo.gameObject.AddComponent<PlanetInfo>();
+        info.datos = datos;
+        CrearHalo(info, nucleo, diametro * 7f, datos.color);
+
+        var cometa = plano.gameObject.AddComponent<Cometa>();
+        cometa.ancla = ancla;
+        cometa.perihelio = RadioOrbita(0.12f);
+        cometa.afelio = RadioOrbita(1.55f);
+        if (materialAditivo == null) return;
+
+        var coma = Procedural.CrearParticulas("Coma", ancla, MaterialAditivo(new Color(0.5f, 0.5f, 0.5f, 0.5f)), 2, false);
+        Procedural.EmitirFija(coma, Vector3.zero, diametro * 5f, new Color(0.6f, 0.85f, 1f, 0.8f));
+        Procedural.EmitirFija(coma, Vector3.zero, diametro * 12f, new Color(0.3f, 0.6f, 1f, 0.3f));
+
+        // La cola se simula en el mundo: las partículas quedan atrás mientras el núcleo avanza.
+        var cola = Procedural.CrearParticulas("Cola", ancla, MaterialAditivo(new Color(0.5f, 0.5f, 0.5f, 0.5f)), 900, true);
+        var main = cola.main;
+        main.simulationSpace = ParticleSystemSimulationSpace.World;
+        main.startLifetime = new ParticleSystem.MinMaxCurve(1.6f, 3f);
+        main.startSpeed = new ParticleSystem.MinMaxCurve(0.012f, 0.026f);
+        main.startSize = new ParticleSystem.MinMaxCurve(diametro * 0.5f, diametro * 1.2f);
+        var forma = cola.shape;
+        forma.shapeType = ParticleSystemShapeType.Cone;
+        forma.angle = 5f;
+        forma.radius = diametro * 0.3f;
+        var color = cola.colorOverLifetime;
+        color.enabled = true;
+        color.color = Procedural.Degradado(new Color(0.85f, 0.95f, 1f), new Color(0.3f, 0.55f, 1f), 0.7f, 0f);
+        var tamano = cola.sizeOverLifetime;
+        tamano.enabled = true;
+        tamano.size = new ParticleSystem.MinMaxCurve(1f, AnimationCurve.Linear(0f, 0.6f, 1f, 3f));
+        cometa.cola = cola;
     }
 
     void CrearAnillo(Transform saturno, Color color)

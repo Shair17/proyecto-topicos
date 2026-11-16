@@ -66,6 +66,8 @@ public class CamaraExplorador : MonoBehaviour
     }
 
     public bool SiguiendoPlaneta => modo == Modo.Viajando || modo == Modo.Siguiendo;
+    // Planeta al que se viaja o que se sigue (null si la cámara está libre).
+    public Transform Objetivo => SiguiendoPlaneta ? objetivo : null;
 
     void Awake()
     {

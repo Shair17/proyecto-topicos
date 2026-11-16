@@ -74,6 +74,16 @@ public class PlanetData
         return cuerpos;
     }
 
+    // Perihelio 0,59 UA, afelio 35 UA, periodo 76 años; su órbita es retrógrada (162° de inclinación).
+    public static PlanetData Cometa()
+    {
+        return new PlanetData { nombre = "Cometa Halley", tipo = "Cometa periódico", diametro = "≈ 11 km (núcleo)",
+            distanciaSol = "de 88 millones a 5 300 millones de km", duracionDia = "≈ 2,2 días",
+            duracionAnio = "≈ 76 años", lunas = 0,
+            datoCurioso = "Su cola siempre apunta en dirección contraria al Sol. Se verá otra vez desde la Tierra en 2061.",
+            color = new Color(0.7f, 0.9f, 1f), tamanoRelativo = 0.05f, velocidadGiro = 30f };
+    }
+
     public static PlanetData Luna()
     {
         return new PlanetData { nombre = "Luna", tipo = "Satélite natural de la Tierra", diametro = "3 474 km",

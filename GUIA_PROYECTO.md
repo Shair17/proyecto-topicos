@@ -4,7 +4,9 @@
 
 **Tecnología:** Unity 2022.3 LTS (2022.3.62f3), sin visor. Funciona en **PC (Windows, .exe)** y en **celular (Android, .apk)**.
 
-**Tipo de realidad virtual:** es **RV no inmersiva** (también llamada *RV de escritorio*). El usuario explora un mundo 100 % virtual a través de una pantalla, sin visor. En el celular, el **giroscopio** hace que al girar el teléfono la vista gire igual, como si fuera una ventana al espacio. La versión con visor (RV inmersiva, por ejemplo con Google Cardboard) se podría agregar como extra.
+**Tipo de realidad virtual:** tiene **dos modos**:
+- **RV no inmersiva** (*de escritorio*): se explora un mundo 100 % virtual a través de la pantalla de la PC o del celular. En el celular, el **giroscopio** hace que al girar el teléfono la vista gire igual.
+- **RV inmersiva** con el botón **Visor VR**: la pantalla se divide en dos imágenes, una por ojo, para ver en 3D con un visor tipo **Google Cardboard**. Se mira girando la cabeza y se elige un planeta con la mirada.
 
 > La versión anterior de realidad aumentada (con Vuforia y el cubo de papel) está guardada en la rama de git `realidad-aumentada`.
 
@@ -25,6 +27,12 @@ Qué hace cada script (en `SistemaSolarRA/Assets/Scripts`):
 - **InfoPanelUI**: muestra la ficha con los datos del planeta.
 - **SolarSystemController**: maneja el botón de pausa y el control de velocidad.
 - **AppUIBuilder**: crea toda la interfaz y conecta los scripts anteriores.
+- **ModoVisor**: modo Visor VR (pantalla dividida para Cardboard, selección con la mirada).
+- **RecorridoGuiado**: recorrido automático por todos los planetas.
+- **QuizPlanetas**: el quiz de 8 preguntas.
+- **Cometa**: órbita elíptica del cometa Halley (rápido cerca del Sol) y su cola.
+- **EtiquetasPlanetas**: los nombres flotantes.
+- **IndicadorDistancia**: la distancia real al Sol (en UA y km).
 - **Otros**:
   - `AparicionSistema`: animación de entrada.
   - `SonidoEspacial`: música y efectos generados por código.
@@ -51,6 +59,21 @@ Abran `SistemaSolarRA/Builds/PC/SistemaSolarVR.exe`. Para pantalla completa, pre
 | Viajar al planeta | Botón **Viajar hasta aquí** de la ficha |
 | Acercarse o alejarse del planeta que se sigue | Rueda del mouse |
 | Volver al inicio | Botón **Vista general** |
+
+**Botones de abajo** (iguales en PC y celular):
+
+| Botón | Qué hace |
+|---|---|
+| **Pausar** | Detiene o reanuda las órbitas. |
+| **Sonido** | Enciende o apaga la música y los efectos. |
+| **Nombres** | Muestra u oculta el nombre sobre cada planeta. |
+| **Vista general** | Vuelve al punto de inicio. |
+| **Recorrido** | La cámara viaja sola del Sol al cometa, parando unos segundos en cada uno con su ficha. Se detiene con **Detener** o al moverse. |
+| **Quiz** | 8 preguntas al azar. Al responder, la cámara viaja hasta la respuesta correcta. Al final muestra el puntaje. |
+| **Visor VR** | Pantalla dividida para un visor Cardboard. Hay que mirar un planeta 2 segundos para viajar, o tocar la pantalla para ir de inmediato. Tocar mirando al vacío vuelve a la vista general. Se sale con **Salir del visor** (arriba) o con el botón Atrás del celular (Esc en PC). |
+| **Velocidad** | Barra para acelerar o frenar las órbitas. |
+
+Arriba a la derecha se ve la **distancia real al Sol** del lugar donde estás, por ejemplo "1,00 UA · 149,6 millones de km".
 
 > Si copian el `.exe` a otra computadora, copien **toda la carpeta** `Builds/PC`, no solo el `.exe`.
 
@@ -81,6 +104,11 @@ Abran `SistemaSolarRA/Builds/PC/SistemaSolarVR.exe`. Para pantalla completa, pre
 
 ## Qué hace la app (para contarlo en la exposición)
 - **Inmersión:** el usuario está *dentro* del sistema solar, rodeado de estrellas, y lo recorre con libertad. En el celular, girar el teléfono gira la vista.
+- **Modo Visor VR (RV inmersiva):** con un Cardboard se ve en 3D. Hay una imagen por ojo, tomada desde puntos separados, como funciona la vista humana (estereoscopía). No hace falta tocar nada: se elige con la mirada.
+- **Recorrido guiado:** un "tour" automático por todo el sistema solar, ideal para dejarlo corriendo mientras explican.
+- **Quiz:** aprendizaje con juego. Cada respuesta termina con un viaje al planeta correcto y un dato explicativo.
+- **Cometa Halley:** órbita elíptica e inclinada. Va más rápido cerca del Sol (segunda ley de Kepler) y su cola siempre apunta lejos del Sol, más larga cuanto más cerca está.
+- **Distancias reales:** mientras uno se mueve, la app traduce la posición a distancia real al Sol (UA y km).
 - **Viaje a los planetas:** al elegir "Viajar hasta aquí", la cámara vuela hasta el planeta y llega por su lado de día. Luego lo acompaña en su órbita y se puede mirar a su alrededor.
 - **Aparición animada:** al abrir la app, el Sol aparece con un rebote y los planetas salen uno por uno hacia sus órbitas, con sonido.
 - **El Sol ilumina de verdad:** es la única luz de la escena, así que cada planeta tiene un lado de día y otro de noche. Además tiene resplandor, una corona de chispas y un halo.
@@ -101,17 +129,22 @@ Abran `SistemaSolarRA/Builds/PC/SistemaSolarVR.exe`. Para pantalla completa, pre
 | El texto de la interfaz no aparece | Falta importar **TMP Essentials** (*Window > TextMeshPro > Import TMP Essential Resources*). |
 | En el celular la vista gira raro o "al revés" | Toquen **Giroscopio** dos veces para recentrar, o apáguenlo y usen el dedo. |
 | Me perdí en el espacio | Botón **Vista general**. |
+| En el visor la imagen se ve doble o cansa la vista | Ajusten el celular para que la línea entre las dos imágenes quede en el centro del visor. |
 | El celular va lento | Cierren otras apps. Si sigue lento, avísenme y bajo la calidad de las texturas. |
 
 ## Mejoras opcionales (si sobra tiempo)
-- **Modo con visor (Google Cardboard)**: RV inmersiva con el celular dentro de un visor de cartón.
-- **Recorrido guiado**: botones Anterior y Siguiente que viajan por los planetas en orden.
-- **Quiz**: preguntas al final, como "¿Cuál es el planeta más caliente?".
 - **Narración**: una voz que lea los datos de cada planeta.
 - **Escala real**: un modo que muestre las distancias reales para comparar.
+- **Corrección de lentes del Cardboard**: hoy el modo visor no corrige la distorsión de los lentes; se ve bien, pero los bordes pierden un poco de nitidez.
 
 ## Para la exposición
-- Expliquen el **tipo de RV**: no inmersiva (pantalla de PC o celular con giroscopio). Compárenla con la RV inmersiva (visores como Meta Quest).
+- Expliquen los **dos tipos de RV** que tiene la app: no inmersiva (pantalla) e inmersiva (botón Visor VR con un Cardboard). Si consiguen un visor Cardboard (15–40 soles), llévenlo: es lo más impactante.
+- **Guion sugerido:**
+  1. Abrir la app y dejar que aparezca el sistema solar.
+  2. Recorrido guiado.
+  3. Viajar a Saturno a mano.
+  4. Quiz con el público.
+  5. Visor VR con un voluntario.
 - Las diapositivas actuales hablan de realidad aumentada. Revisen la diapositiva del "modelo para nuestro proyecto" (Merge Cube era un ejemplo de RA).
 - **Fuentes que deben citar:**
   - NASA Planetary Fact Sheet (datos de los planetas)

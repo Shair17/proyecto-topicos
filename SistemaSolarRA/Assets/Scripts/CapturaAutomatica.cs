@@ -3,7 +3,7 @@ using System.IO;
 using UnityEngine;
 
 // Solo para revisar cómo se ve la app sin tocarla: si se abre con "-capturas <carpeta>",
-// guarda varias capturas (la animación, el sistema completo y viajando a la Tierra, Saturno y el Sol) y se cierra.
+// guarda varias capturas (animación, sistema, viajes, quiz y modo visor) y se cierra.
 // Sin ese argumento no hace nada (no afecta al APK).
 public class CapturaAutomatica : MonoBehaviour
 {
@@ -29,19 +29,39 @@ public class CapturaAutomatica : MonoBehaviour
 
         var selector = FindObjectOfType<PlanetSelector>();
         var camara = CamaraExplorador.Instancia;
-        foreach (var nombre in new[] { "Tierra", "Saturno", "Sol" })
+        float viaje = camara != null ? camara.duracionViaje : 1f;
+        foreach (var nombre in new[] { "Tierra", "Saturno", "Sol", "Cometa Halley" })
             foreach (var p in FindObjectsOfType<PlanetInfo>())
             {
                 if (p.datos.nombre != nombre) continue;
                 if (selector != null) selector.Seleccionar(p);
                 if (camara != null) camara.Viajar(p.transform);
-                yield return Capturar(camara != null ? camara.duracionViaje + 0.6f : 1f, "3_" + nombre);
+                yield return Capturar(viaje + 0.6f, "3_" + nombre.Replace(' ', '_'));
             }
-
-        // De vuelta a la vista general y avanzando hacia el Sol, como lo haría alguien con el teclado.
         if (selector != null) selector.Deseleccionar();
+
+        // Quiz: se responde la primera opción y se captura el viaje a la respuesta.
+        var quiz = FindObjectOfType<QuizPlanetas>();
+        if (quiz != null)
+        {
+            quiz.Iniciar();
+            yield return Capturar(0.5f, "4_quiz_pregunta");
+            quiz.Responder(0);
+            yield return Capturar(viaje + 0.6f, "5_quiz_respuesta");
+            quiz.Cerrar();
+        }
+
+        // Modo visor (pantalla dividida para Cardboard) mirando hacia el Sol desde la vista general.
         if (camara != null) camara.VistaGeneral();
-        yield return Capturar(camara != null ? camara.duracionViaje + 0.3f : 1f, "4_vista_general");
+        yield return new WaitForSeconds(viaje + 0.3f);
+        var visor = FindObjectOfType<ModoVisor>();
+        if (visor != null)
+        {
+            visor.Entrar();
+            yield return Capturar(1f, "6_visor");
+            visor.Salir();
+        }
+        yield return Capturar(0.5f, "7_vista_general");
         Application.Quit();
     }
 
