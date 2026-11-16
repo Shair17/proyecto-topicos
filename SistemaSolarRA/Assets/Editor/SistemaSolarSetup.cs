@@ -82,6 +82,8 @@ public static class SistemaSolarSetup
         PlayerSettings.defaultScreenWidth = 1280;
         PlayerSettings.defaultScreenHeight = 720;
         PlayerSettings.resizableWindow = true;
+        // Que no se congele si se hace clic en otra ventana (por ejemplo, en la exposición).
+        PlayerSettings.runInBackground = true;
         var reporte = BuildPipeline.BuildPlayer(new[] { RutaEscena }, RutaExe,
             BuildTarget.StandaloneWindows64, BuildOptions.None);
         Terminar(reporte, RutaExe, "Abran SistemaSolarVR.exe. Para pantalla completa: Alt + Enter.");

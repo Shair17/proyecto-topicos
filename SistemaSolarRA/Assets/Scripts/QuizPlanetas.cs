@@ -125,11 +125,30 @@ public class QuizPlanetas : MonoBehaviour
         }
         retroalimentacion.text = $"Puntaje: {puntaje}";
         botonSiguiente.gameObject.SetActive(false);
+        LeerPregunta();
     }
 
-    public void Responder(int elegida)
+    // La pregunta y sus opciones en voz alta (también con el comando de voz "repetir").
+    public void LeerPregunta()
     {
-        if (respondida) return;
+        if (Narrador.Instancia == null || partida.Count == 0) return;
+        if (terminado) { Narrador.Instancia.Decir(pregunta.text); return; }
+        Narrador.Instancia.Decir($"Pregunta {indice + 1}. {partida[indice].texto} " +
+                                 $"{textosActuales[0]}, {textosActuales[1]}, o {textosActuales[2]}.");
+    }
+
+    // Responder diciendo el nombre del planeta (comando de voz). Devuelve false si no es una de las opciones.
+    public bool ResponderPorNombre(string nombre)
+    {
+        if (textosActuales == null) return false;
+        int i = System.Array.IndexOf(textosActuales, nombre);
+        return i >= 0 && Responder(i);
+    }
+
+    // Devuelve false si la pregunta ya estaba respondida.
+    public bool Responder(int elegida)
+    {
+        if (respondida || terminado || elegida < 0 || elegida >= textosActuales.Length) return false;
         respondida = true;
         var p = partida[indice];
         bool acierto = textosActuales[elegida] == p.correcta;
@@ -169,9 +188,11 @@ public class QuizPlanetas : MonoBehaviour
 
         botonSiguiente.gameObject.SetActive(true);
         textoSiguiente.text = indice + 1 < partida.Count ? "Siguiente" : "Ver resultado";
+        Narrador.Instancia?.Decir((acierto ? "¡Correcto! " : $"Incorrecto. Era {p.correcta}. ") + p.explicacion);
+        return true;
     }
 
-    void Siguiente()
+    public void Siguiente()
     {
         if (terminado) { Iniciar(); return; }
         indice++;
@@ -189,6 +210,7 @@ public class QuizPlanetas : MonoBehaviour
         textoSiguiente.text = "Jugar otra vez";
         if (SonidoEspacial.Instancia != null && puntaje >= partida.Count * 0.6f) SonidoEspacial.Instancia.Aparicion();
         if (CamaraExplorador.Instancia != null) CamaraExplorador.Instancia.VistaGeneral();
+        Narrador.Instancia?.Decir($"Obtuviste {puntaje} de {partida.Count}. {mensaje}");
     }
 
     void Resaltar(PlanetInfo planeta)

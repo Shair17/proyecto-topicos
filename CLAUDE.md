@@ -44,6 +44,20 @@ Responder siempre en **español**. El usuario es estudiante de Informática (UNT
     - `EtiquetasPlanetas`: TMP 3D por cada `PlanetInfo`, que mira a la cámara con escala = distancia × 0,2. Se oculta cuando el planeta llena la pantalla.
     - `IndicadorDistancia`: interpola el radio de la escena a UA reales (más allá de Neptuno extrapola: la cámara inicial marca unos 85 UA). Formatea los números a mano, sin `CultureInfo("es-ES")`.
     - `SonidoEspacial` tiene `Correcto()` e `Incorrecto()`. `PlanetData.Cometa()` tiene los datos del Halley.
+  - Voz (agregada el 2026-11-16):
+    - `Narrador`: texto a voz.
+      - Android: `android.speech.tts.TextToSpeech` por JNI, con `AndroidJavaProxy` para `OnInitListener`. Prueba es-PE, luego es-US, es-ES y es. Usa `speak(texto, QUEUE_FLUSH, Bundle vacío, id)` y `isSpeaking`.
+      - Windows: un proceso de `powershell.exe` 5.1 con `-EncodedCommand` que usa System.Speech con la primera voz `es*` (Sabina Desktop). Recibe cada línea en base64 UTF-8 por stdin; una línea vacía corta la lectura. En Windows, `Hablando` se estima con la longitud del texto (14 caracteres/s).
+      - Se silencia con el botón Sonido.
+    - `ReconocimientoVoz`:
+      - Windows: `KeywordRecognizer` de Unity (lista cerrada de frases generada por `ComandosVoz.FrasesWindows`, `ConfidenceLevel.Low`). Usa el idioma de voz del sistema, que el usuario debe poner en Español (México).
+      - Android: `SpeechRecognizer` por JNI en el hilo de UI (`runOnUiThread`), con `RecognitionListener` como `AndroidJavaProxy`, es-PE en forma libre. Se reinicia tras cada resultado o error (salvo el error 9, falta de permiso). Pide `Permission.Microphone`.
+      - Los resultados se encolan con lock y se entregan en `Update`. Ignora lo que oye mientras `Narrador.Hablando` y hasta 0,6 s después.
+    - `ComandosVoz`: normaliza el texto (minúsculas, sin tildes) y busca palabras clave. El quiz tiene prioridad: decir un planeta es responder. También actualiza el cartel `CartelVoz`.
+    - Ganchos de narración: `PlanetSelector.Seleccionar` lee la ficha y `Deseleccionar` llama a `Callar`. `QuizPlanetas` lee la pregunta, la respuesta y el resultado, y tiene `ResponderPorNombre`, `LeerPregunta` y un `Responder` que devuelve bool. `ModoVisor.Elegir` lee la ficha. `RecorridoGuiado` espera a que termine la narración.
+    - `Assets/Plugins/Android/AndroidManifest.xml`: manifest propio basado en la plantilla de Unity 2022.3. Agrega `RECORD_AUDIO` y `<queries>` para `android.speech.RecognitionService` y `TTS_SERVICE`, necesarios desde Android 11.
+    - En esta PC se instaló `Language.Speech~~~es-MX` con elevación. `Language.TextToSpeech~~~es-MX` ya estaba.
+  - `SistemaSolarSetup.CompilarPC` pone `runInBackground = true`. Sin eso, el `.exe` se congela al perder el foco, y las capturas fallaban a veces por eso.
   - `AnchoSegunDistancia`: ajusta el ancho de las órbitas y estelas según la distancia a la cámara.
   - `PlanetOrbit`, `PlanetInfo` (crece y brilla), `InfoPanelUI`, `SolarSystemController`, `Procedural`, `SonidoEspacial` (audio con `AudioClip.Create`).
   - `AparicionSistema`: animación de entrada. Arranca cuando `Renderer.enabled` del Sol está encendido, es decir, al iniciar.
@@ -81,12 +95,13 @@ No hay tests ni linter: se verifica compilando y con las capturas.
 
 ## Estado (al 2026-11-16)
 - La versión VR **compila sin errores** (.exe y APK) con: visor VR, recorrido, quiz, cometa, nombres y distancia real. Se revisó todo con capturas.
+- Voz verificada en PC con comandos simulados en las capturas 8 y 9: el `KeywordRecognizer` arranca (`disponible=True activa=True`) y el narrador carga Sabina. Falta probarla hablando de verdad y el código de Android en un teléfono (compila).
 - Sin probar en un celular real: el giroscopio (la conversión `Euler(90,0,0) * (x, y, -z, -w)` en LandscapeLeft), el modo visor dentro de un Cardboard (sin corrección de distorsión), los botones Avanzar/Retroceder, el pellizco y el rendimiento (unas 2200 partículas).
 - La versión VR está en un commit local de `main`. No se ha subido nada a GitHub: preguntar antes de hacer push.
 
 ## Próximos pasos
 1. Que el usuario pruebe el `.exe` y el APK y cuente cómo le va, en especial el giroscopio y el visor.
-2. Extras que quedan: narración, escala real y corrección de lentes del Cardboard.
+2. Extras que quedan: escala real y corrección de lentes del Cardboard.
 3. Exposición: actualizar las diapositivas (de RA a RV), agregar referencias (NASA, Solar System Scope) y llevar el `.exe`, el APK y un video de respaldo.
 
 ## Si se abre en otra computadora

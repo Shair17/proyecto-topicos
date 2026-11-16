@@ -43,9 +43,14 @@ public class EtiquetasPlanetas : MonoBehaviour
 
     public bool Alternar()
     {
-        Visibles = !Visibles;
-        if (contenedor != null) contenedor.gameObject.SetActive(Visibles);
+        Mostrar(!Visibles);
         return Visibles;
+    }
+
+    public void Mostrar(bool mostrar)
+    {
+        Visibles = mostrar;
+        if (contenedor != null) contenedor.gameObject.SetActive(Visibles);
     }
 
     void LateUpdate()

@@ -62,7 +62,9 @@ public class RecorridoGuiado : MonoBehaviour
             if (textoEstado != null)
                 textoEstado.text = $"<b>Recorrido guiado</b>  {i + 1} de {paradas.Count}:  {planeta.datos.nombre}";
 
-            for (float t = 0f; t < camara.duracionViaje + permanencia; t += Time.unscaledDeltaTime)
+            // Se queda al menos 'permanencia' segundos, y si el narrador sigue leyendo la ficha, espera a que termine.
+            for (float t = 0f; t < camara.duracionViaje + permanencia || (Narrador.Instancia != null && Narrador.Instancia.Hablando);
+                 t += Time.unscaledDeltaTime)
             {
                 if (camara.Objetivo != planeta.transform) { Detener(); yield break; } // el usuario tomó el control
                 yield return null;

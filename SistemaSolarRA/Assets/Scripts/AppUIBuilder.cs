@@ -46,8 +46,8 @@ public class AppUIBuilder : MonoBehaviour
         int columna = 0;
         Button BotonBarra(string nombre, string texto, out TextMeshProUGUI etiqueta)
         {
-            float x = 0.006f + columna++ * 0.092f;
-            return CrearBoton(nombre, controles, texto, new Vector2(x, 0.15f), new Vector2(x + 0.086f, 0.85f), out etiqueta);
+            float x = 0.005f + columna++ * 0.083f;
+            return CrearBoton(nombre, controles, texto, new Vector2(x, 0.15f), new Vector2(x + 0.078f, 0.85f), out etiqueta);
         }
         var botonPausa = BotonBarra("BotonPausa", "Pausar", out var textoPausa);
         var botonSonido = BotonBarra("BotonSonido", "Sonido: Sí", out var textoSonido);
@@ -56,11 +56,20 @@ public class AppUIBuilder : MonoBehaviour
         var botonRecorrido = BotonBarra("BotonRecorrido", "Recorrido", out var textoRecorrido);
         var botonQuiz = BotonBarra("BotonQuiz", "Quiz", out _);
         var botonVisor = BotonBarra("BotonVisor", "Visor VR", out _);
+        var botonVoz = BotonBarra("BotonVoz", "Voz: No", out var textoVoz);
         botonGiro = BotonBarra("BotonGiroscopio", "Giroscopio: No", out textoGiro);
 
-        var etiqueta = CrearRect("EtiquetaVelocidad", controles, new Vector2(0.76f, 0.55f), new Vector2(0.99f, 0.95f));
+        // Cartel de voz: muestra lo que se escuchó y qué se hizo (encima de la barra de abajo)
+        var cartelVoz = CrearRect("CartelVoz", canvas, new Vector2(0.2f, 0.125f), new Vector2(0.62f, 0.185f));
+        cartelVoz.gameObject.AddComponent<Image>().color = new Color(colorPanel.r, colorPanel.g, colorPanel.b, 0.75f);
+        var textoCartelVoz = CrearTexto("Texto", cartelVoz, "", 26, FontStyles.Normal, TextAlignmentOptions.Center);
+        AutoTamano(textoCartelVoz, 14, 26);
+        textoCartelVoz.margin = new Vector4(12f, 0f, 12f, 0f);
+        cartelVoz.gameObject.SetActive(false);
+
+        var etiqueta = CrearRect("EtiquetaVelocidad", controles, new Vector2(0.77f, 0.55f), new Vector2(0.99f, 0.95f));
         CrearTexto("Texto", etiqueta, "Velocidad de las órbitas", 30, FontStyles.Normal, TextAlignmentOptions.Center);
-        var slider = CrearSlider(controles, new Vector2(0.77f, 0.15f), new Vector2(0.98f, 0.5f));
+        var slider = CrearSlider(controles, new Vector2(0.78f, 0.15f), new Vector2(0.98f, 0.5f));
 
         // Botones para avanzar en el celular (en PC se usa el teclado)
         if (celular)
@@ -132,7 +141,11 @@ public class AppUIBuilder : MonoBehaviour
         var sonido = gameObject.AddComponent<SonidoEspacial>();
         var control = gameObject.AddComponent<SolarSystemController>();
         control.textoBotonPausa = textoPausa;
+        control.slider = slider;
         var etiquetas = gameObject.AddComponent<EtiquetasPlanetas>();
+        this.etiquetas = etiquetas;
+        this.textoNombres = textoNombres;
+        gameObject.AddComponent<Narrador>();
         gameObject.AddComponent<IndicadorDistancia>().texto = textoDistancia;
 
         var recorrido = gameObject.AddComponent<RecorridoGuiado>();
@@ -160,6 +173,25 @@ public class AppUIBuilder : MonoBehaviour
         visor.quiz = quiz;
         var builder = FindObjectOfType<SolarSystemBuilder>();
         if (builder != null) visor.materialAditivo = builder.materialAditivo;
+
+        // Voz: reconocimiento (escuchar) + intérprete de comandos
+        var voz = gameObject.AddComponent<ReconocimientoVoz>();
+        var comandos = gameObject.AddComponent<ComandosVoz>();
+        comandos.voz = voz;
+        comandos.selector = selector;
+        comandos.recorrido = recorrido;
+        comandos.quiz = quiz;
+        comandos.visor = visor;
+        comandos.control = control;
+        comandos.etiquetas = etiquetas;
+        comandos.cartel = cartelVoz.gameObject;
+        comandos.textoCartel = textoCartelVoz;
+        botonVoz.onClick.AddListener(() =>
+        {
+            if (voz.Alternar()) Narrador.Instancia?.Decir("Te escucho. Di ayuda para saber qué puedo hacer.");
+        });
+        this.voz = voz;
+        this.textoVoz = textoVoz;
 
         // ---------- Conexiones ----------
         botonPausa.onClick.AddListener(control.AlternarPausa);
@@ -205,12 +237,19 @@ public class AppUIBuilder : MonoBehaviour
         else botonGiro.gameObject.SetActive(false);
     }
 
-    // El texto del botón del giroscopio también cambia cuando el modo visor lo enciende o apaga.
+    EtiquetasPlanetas etiquetas;
+    TextMeshProUGUI textoNombres;
+    ReconocimientoVoz voz;
+    TextMeshProUGUI textoVoz;
+
+    // Textos que también cambian por otros caminos: el giroscopio (modo visor) y los nombres (comando de voz).
     void LateUpdate()
     {
         var camara = CamaraExplorador.Instancia;
         if (camara != null && botonGiro != null && botonGiro.gameObject.activeSelf)
             textoGiro.text = camara.GiroscopioActivo ? "Giroscopio: Sí" : "Giroscopio: No";
+        if (etiquetas != null) textoNombres.text = etiquetas.Visibles ? "Nombres: Sí" : "Nombres: No";
+        if (voz != null) textoVoz.text = voz.Activo ? "Voz: Sí" : "Voz: No"; // p. ej. si Android niega el micrófono
     }
 
     static Camera BuscarCamara()

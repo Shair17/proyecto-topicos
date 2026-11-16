@@ -62,6 +62,24 @@ public class CapturaAutomatica : MonoBehaviour
             visor.Salir();
         }
         yield return Capturar(0.5f, "7_vista_general");
+
+        // Voz: se enciende el micrófono (para comprobar que arranca) y se simulan frases como si se hubieran dicho.
+        var voz = FindObjectOfType<ReconocimientoVoz>();
+        if (voz != null)
+        {
+            voz.Iniciar();
+            Debug.Log($"CAPTURA voz disponible={voz.Disponible} activa={voz.Activo}");
+        }
+        var comandos = FindObjectOfType<ComandosVoz>();
+        if (comandos != null)
+        {
+            comandos.Interpretar("vamos a Saturno");
+            yield return Capturar(viaje + 0.6f, "8_voz_saturno");
+            comandos.Interpretar("¿Qué puedo decir?");
+            comandos.Interpretar("quiz");
+            yield return Capturar(1f, "9_voz_quiz");
+        }
+        if (voz != null) voz.Detener();
         Application.Quit();
     }
 

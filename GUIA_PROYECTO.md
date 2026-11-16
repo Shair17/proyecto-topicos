@@ -33,6 +33,7 @@ Qué hace cada script (en `SistemaSolarRA/Assets/Scripts`):
 - **Cometa**: órbita elíptica del cometa Halley (rápido cerca del Sol) y su cola.
 - **EtiquetasPlanetas**: los nombres flotantes.
 - **IndicadorDistancia**: la distancia real al Sol (en UA y km).
+- **Narrador**, **ReconocimientoVoz** y **ComandosVoz**: leer en voz alta, escuchar el micrófono e interpretar lo que se dijo.
 - **Otros**:
   - `AparicionSistema`: animación de entrada.
   - `SonidoEspacial`: música y efectos generados por código.
@@ -75,6 +76,32 @@ Abran `SistemaSolarRA/Builds/PC/SistemaSolarVR.exe`. Para pantalla completa, pre
 
 Arriba a la derecha se ve la **distancia real al Sol** del lugar donde estás, por ejemplo "1,00 UA · 149,6 millones de km".
 
+### Voz: hablarle a la app y que lea en voz alta
+- **Narración (automática):** al elegir un planeta, la app lee su ficha en voz alta. También lee las preguntas del quiz y si la respuesta fue correcta. Durante el recorrido espera a terminar de leer antes de pasar al siguiente planeta. Se silencia con el botón **Sonido**.
+- **Comandos de voz:** se activan con el botón **Voz**. Un cartel muestra lo que la app entendió.
+
+| Di… | Qué hace |
+|---|---|
+| "**ir a Saturno**", "vamos a la Luna", "llévame al Sol" o solo "**Júpiter**" | Viaja a ese cuerpo y lee su ficha (también "cometa"). |
+| "**recorrido**" / "detener" | Inicia o detiene el recorrido guiado. |
+| "**quiz**" | Empieza el quiz. Para responder, di el **nombre** de la opción ("Venus") o "opción uno/dos/tres". "**Siguiente**" pasa de pregunta y "repetir" la vuelve a leer. |
+| "**pausa**" / "**continuar**" | Detiene o reanuda las órbitas. |
+| "**más rápido**" / "**más lento**" | Cambia la velocidad de las órbitas. |
+| "**vista general**" / "volver" | Vuelve al punto de inicio. |
+| "**nombres**" / "ocultar nombres" | Muestra u oculta los nombres de los planetas. |
+| "**modo visor**" / "salir del visor" | Entra o sale del modo Visor VR. Dentro del visor también se puede viajar diciendo el planeta. |
+| "**leer**" | Vuelve a leer la ficha del planeta elegido. |
+| "**silencio**" | Corta la lectura. |
+| "**ayuda**" | La app dice qué comandos hay. |
+
+**En el celular (Android):** usa el reconocimiento de Google y entiende frases naturales. La primera vez pide **permiso de micrófono**: acéptenlo. Normalmente necesita **internet**. Entre frase y frase el celular puede hacer un pequeño "bip": es normal.
+
+**En la PC (Windows):** usa el reconocimiento de Windows, **sin internet**, y la voz "Sabina" para leer. Ya se instaló el paquete de voz en español. Hay que hacer **una sola vez**:
+1. Abrir **Configuración > Hora e idioma > Voz** y en **Idioma de voz** elegir **Español (México)**.
+2. Revisar que el micrófono esté permitido: **Configuración > Privacidad y seguridad > Micrófono** > activar "Permitir que las aplicaciones de escritorio accedan al micrófono".
+
+En la PC solo reconoce las frases de la tabla, así que hay que hablar claro y cerca del micrófono.
+
 > Si copian el `.exe` a otra computadora, copien **toda la carpeta** `Builds/PC`, no solo el `.exe`.
 
 ### En el celular (Android)
@@ -109,6 +136,7 @@ Arriba a la derecha se ve la **distancia real al Sol** del lugar donde estás, p
 - **Quiz:** aprendizaje con juego. Cada respuesta termina con un viaje al planeta correcto y un dato explicativo.
 - **Cometa Halley:** órbita elíptica e inclinada. Va más rápido cerca del Sol (segunda ley de Kepler) y su cola siempre apunta lejos del Sol, más larga cuanto más cerca está.
 - **Distancias reales:** mientras uno se mueve, la app traduce la posición a distancia real al Sol (UA y km).
+- **Interacción por voz:** se le habla a la app ("ir a Saturno", "quiz") y ella responde leyendo en voz alta. Dentro del visor VR, la voz es la forma natural de controlarla sin tocar la pantalla. En Android usa el reconocimiento y la síntesis de voz de Google, y en Windows los de Microsoft.
 - **Viaje a los planetas:** al elegir "Viajar hasta aquí", la cámara vuela hasta el planeta y llega por su lado de día. Luego lo acompaña en su órbita y se puede mirar a su alrededor.
 - **Aparición animada:** al abrir la app, el Sol aparece con un rebote y los planetas salen uno por uno hacia sus órbitas, con sonido.
 - **El Sol ilumina de verdad:** es la única luz de la escena, así que cada planeta tiene un lado de día y otro de noche. Además tiene resplandor, una corona de chispas y un halo.
@@ -130,10 +158,12 @@ Arriba a la derecha se ve la **distancia real al Sol** del lugar donde estás, p
 | En el celular la vista gira raro o "al revés" | Toquen **Giroscopio** dos veces para recentrar, o apáguenlo y usen el dedo. |
 | Me perdí en el espacio | Botón **Vista general**. |
 | En el visor la imagen se ve doble o cansa la vista | Ajusten el celular para que la línea entre las dos imágenes quede en el centro del visor. |
+| La voz no entiende nada en la PC | Revisen que el **Idioma de voz** de Windows sea Español (México) y que el micrófono esté permitido (ver la sección Voz). |
+| La voz no funciona en el celular | Revisen el permiso de micrófono de la app (Ajustes > Apps > SistemaSolarVR > Permisos) y la conexión a internet. |
+| La app no lee en voz alta | El botón **Sonido** debe estar en "Sí". En el celular, instalen o actualicen "Servicios de voz de Google" desde Play Store. |
 | El celular va lento | Cierren otras apps. Si sigue lento, avísenme y bajo la calidad de las texturas. |
 
 ## Mejoras opcionales (si sobra tiempo)
-- **Narración**: una voz que lea los datos de cada planeta.
 - **Escala real**: un modo que muestre las distancias reales para comparar.
 - **Corrección de lentes del Cardboard**: hoy el modo visor no corrige la distorsión de los lentes; se ve bien, pero los bordes pierden un poco de nitidez.
 

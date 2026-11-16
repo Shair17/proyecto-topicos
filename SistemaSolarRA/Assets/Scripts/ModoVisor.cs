@@ -184,6 +184,12 @@ public class ModoVisor : MonoBehaviour
         if (Time.unscaledTime > ocultarTextoEn) textoVR.text = "";
     }
 
+    // Comando de voz "ir a Marte" dentro del visor.
+    public void ElegirPorVoz(PlanetInfo planeta)
+    {
+        if (Activo) Elegir(planeta);
+    }
+
     void Elegir(PlanetInfo planeta)
     {
         if (elegido != null) elegido.Resaltar(false);
@@ -194,6 +200,7 @@ public class ModoVisor : MonoBehaviour
         if (SonidoEspacial.Instancia != null) SonidoEspacial.Instancia.Toque();
         var d = planeta.datos;
         MostrarTexto($"<b><color=#F2B533>{d.nombre}</color></b>\n<size=75%>{d.tipo}  ·  {d.diametro}\n<i>{d.datoCurioso}</i></size>", 9f);
+        Narrador.Instancia?.Decir(ComandosVoz.TextoFicha(d));
     }
 
     void MostrarTexto(string texto, float segundos)

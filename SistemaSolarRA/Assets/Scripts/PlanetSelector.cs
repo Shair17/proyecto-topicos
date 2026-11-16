@@ -53,6 +53,7 @@ public class PlanetSelector : MonoBehaviour
         seleccionado.Resaltar(true);
         panel.Mostrar(planeta.datos);
         if (SonidoEspacial.Instancia != null) SonidoEspacial.Instancia.Toque();
+        Narrador.Instancia?.Decir(ComandosVoz.TextoFicha(planeta.datos)); // lee la ficha en voz alta
     }
 
     public void Deseleccionar()
@@ -60,6 +61,7 @@ public class PlanetSelector : MonoBehaviour
         if (seleccionado != null) seleccionado.Resaltar(false);
         seleccionado = null;
         panel.Ocultar();
+        Narrador.Instancia?.Callar();
     }
 
     // Botón "Viajar" de la ficha: la cámara vuela hasta el planeta y lo sigue.
