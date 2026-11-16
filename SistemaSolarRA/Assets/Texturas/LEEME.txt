@@ -1,1 +1,1 @@
-Pongan aqui las texturas de los planetas (opcional). Ver GUIA_PROYECTO.md.
+Texturas de https://www.solarsystemscope.com/textures/ (licencia CC BY 4.0, citar la fuente). El menu Sistema Solar las asigna solas segun el nombre del archivo.

@@ -17,7 +17,7 @@ public class CubeTrackingUI : MonoBehaviour
         if (referencia == null)
         {
             var sistema = FindObjectOfType<SolarSystemBuilder>();
-            if (sistema != null) referencia = sistema.GetComponentInChildren<Renderer>();
+            if (sistema != null) referencia = sistema.Sol;
         }
         MostrarCubo(referencia != null && referencia.enabled);
     }

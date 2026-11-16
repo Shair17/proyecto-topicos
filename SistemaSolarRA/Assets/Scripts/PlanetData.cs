@@ -18,10 +18,12 @@ public class PlanetData
     public float tamanoRelativo;
     public float radioOrbitaRelativo;
     public float velocidadOrbita;
+    public float inclinacionEje;   // grados (inclinación real del eje)
+    public float velocidadGiro;    // grados por segundo sobre su propio eje (no está a escala)
 
     public static PlanetData[] SistemaSolar()
     {
-        return new[]
+        var cuerpos = new[]
         {
             new PlanetData { nombre = "Sol", tipo = "Estrella (enana amarilla)", diametro = "1 392 700 km",
                 distanciaSol = "-", duracionDia = "≈ 27 días (ecuador)", duracionAnio = "-", lunas = 0,
@@ -46,19 +48,38 @@ public class PlanetData
             new PlanetData { nombre = "Júpiter", tipo = "Gigante gaseoso", diametro = "142 984 km",
                 distanciaSol = "778,5 millones de km", duracionDia = "9,9 horas", duracionAnio = "11,9 años", lunas = 95,
                 datoCurioso = "Su Gran Mancha Roja es una tormenta más grande que la Tierra.",
-                color = new Color(0.85f, 0.7f, 0.55f), tamanoRelativo = 0.45f, radioOrbitaRelativo = 0.66f, velocidadOrbita = 0.084f },
+                color = new Color(0.85f, 0.7f, 0.55f), tamanoRelativo = 0.45f, radioOrbitaRelativo = 0.72f, velocidadOrbita = 0.084f },
             new PlanetData { nombre = "Saturno", tipo = "Gigante gaseoso", diametro = "120 536 km",
                 distanciaSol = "1 432 millones de km", duracionDia = "10,7 horas", duracionAnio = "29,4 años", lunas = 146,
                 datoCurioso = "Su densidad es tan baja que flotaría en el agua.",
-                color = new Color(0.92f, 0.83f, 0.6f), tamanoRelativo = 0.38f, radioOrbitaRelativo = 0.86f, velocidadOrbita = 0.034f },
+                color = new Color(0.92f, 0.83f, 0.6f), tamanoRelativo = 0.38f, radioOrbitaRelativo = 0.96f, velocidadOrbita = 0.034f },
             new PlanetData { nombre = "Urano", tipo = "Gigante helado", diametro = "51 118 km",
                 distanciaSol = "2 867 millones de km", duracionDia = "17,2 horas", duracionAnio = "84 años", lunas = 28,
                 datoCurioso = "Gira 'acostado': su eje está inclinado unos 98°.",
-                color = new Color(0.55f, 0.85f, 0.9f), tamanoRelativo = 0.28f, radioOrbitaRelativo = 1.03f, velocidadOrbita = 0.012f },
+                color = new Color(0.55f, 0.85f, 0.9f), tamanoRelativo = 0.28f, radioOrbitaRelativo = 1.18f, velocidadOrbita = 0.012f },
             new PlanetData { nombre = "Neptuno", tipo = "Gigante helado", diametro = "49 528 km",
                 distanciaSol = "4 515 millones de km", duracionDia = "16,1 horas", duracionAnio = "164,8 años", lunas = 16,
                 datoCurioso = "Tiene los vientos más rápidos del sistema solar (≈ 2 000 km/h).",
-                color = new Color(0.25f, 0.4f, 0.95f), tamanoRelativo = 0.27f, radioOrbitaRelativo = 1.17f, velocidadOrbita = 0.006f },
+                color = new Color(0.25f, 0.4f, 0.95f), tamanoRelativo = 0.27f, radioOrbitaRelativo = 1.34f, velocidadOrbita = 0.006f },
         };
+
+        // Inclinación real del eje (Venus y Urano casi "de cabeza" y "acostado") y giro sobre sí mismos.
+        float[] inclinacion = { 7.25f, 0.03f, 177.4f, 23.4f, 25.2f, 3.1f, 26.7f, 97.8f, 28.3f };
+        float[] giro = { 8f, 6f, 4f, 45f, 43f, 110f, 100f, 70f, 75f };
+        for (int i = 0; i < cuerpos.Length; i++)
+        {
+            cuerpos[i].inclinacionEje = inclinacion[i];
+            cuerpos[i].velocidadGiro = giro[i];
+        }
+        return cuerpos;
+    }
+
+    public static PlanetData Luna()
+    {
+        return new PlanetData { nombre = "Luna", tipo = "Satélite natural de la Tierra", diametro = "3 474 km",
+            distanciaSol = "384 400 km de la Tierra", duracionDia = "29,5 días terrestres",
+            duracionAnio = "27,3 días (una vuelta a la Tierra)", lunas = 0,
+            datoCurioso = "Siempre nos muestra la misma cara: gira sobre sí misma al mismo ritmo que da la vuelta a la Tierra.",
+            color = new Color(0.75f, 0.75f, 0.75f), tamanoRelativo = 0.06f, inclinacionEje = 6.7f, velocidadGiro = 0f };
     }
 }

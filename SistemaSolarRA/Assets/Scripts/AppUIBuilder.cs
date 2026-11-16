@@ -30,11 +30,13 @@ public class AppUIBuilder : MonoBehaviour
         controles.gameObject.AddComponent<Image>().color = colorPanel;
 
         var botonPausa = CrearBoton("BotonPausa", controles, "Pausar",
-            new Vector2(0.04f, 0.2f), new Vector2(0.36f, 0.8f), out TextMeshProUGUI textoPausa);
+            new Vector2(0.03f, 0.2f), new Vector2(0.3f, 0.8f), out TextMeshProUGUI textoPausa);
+        var botonSonido = CrearBoton("BotonSonido", controles, "Sonido: Sí",
+            new Vector2(0.33f, 0.2f), new Vector2(0.6f, 0.8f), out TextMeshProUGUI textoSonido);
 
-        var etiqueta = CrearRect("EtiquetaVelocidad", controles, new Vector2(0.42f, 0.55f), new Vector2(0.96f, 0.9f));
+        var etiqueta = CrearRect("EtiquetaVelocidad", controles, new Vector2(0.64f, 0.55f), new Vector2(0.97f, 0.9f));
         CrearTexto("Texto", etiqueta, "Velocidad", 40, FontStyles.Normal, TextAlignmentOptions.Center);
-        var slider = CrearSlider(controles, new Vector2(0.42f, 0.2f), new Vector2(0.96f, 0.5f));
+        var slider = CrearSlider(controles, new Vector2(0.64f, 0.2f), new Vector2(0.97f, 0.5f));
 
         // Ficha del planeta (arriba)
         var panelInfo = CrearRect("PanelInfo", canvas, new Vector2(0.04f, 0.6f), new Vector2(0.96f, 0.97f));
@@ -49,16 +51,22 @@ public class AppUIBuilder : MonoBehaviour
         cuerpo.fontSizeMax = 42;
         var botonCerrar = CrearBoton("BotonCerrar", panelInfo, "X",
             new Vector2(0.84f, 0.84f), new Vector2(0.96f, 0.97f), out _);
+        // Franja del color del planeta en el borde izquierdo de la ficha
+        var acento = CrearRect("Acento", panelInfo, new Vector2(0f, 0f), new Vector2(0.015f, 1f)).gameObject.AddComponent<Image>();
 
         // Scripts de la app
         var info = panelInfo.gameObject.AddComponent<InfoPanelUI>();
         info.titulo = titulo;
         info.cuerpo = cuerpo;
+        info.acento = acento;
         panelInfo.gameObject.SetActive(false);
 
         var selector = gameObject.AddComponent<PlanetSelector>();
         selector.panel = info;
         selector.camara = BuscarCamara();
+
+        var sonido = gameObject.AddComponent<SonidoEspacial>();
+        botonSonido.onClick.AddListener(() => textoSonido.text = sonido.Alternar() ? "Sonido: Sí" : "Sonido: No");
 
         var control = gameObject.AddComponent<SolarSystemController>();
         control.textoBotonPausa = textoPausa;
@@ -135,6 +143,10 @@ public class AppUIBuilder : MonoBehaviour
         boton.targetGraphic = imagen;
         etiqueta = CrearTexto("Texto", rt, texto, 48, FontStyles.Bold, TextAlignmentOptions.Center);
         etiqueta.color = colorTextoBoton;
+        etiqueta.enableAutoSizing = true;
+        etiqueta.fontSizeMin = 24;
+        etiqueta.fontSizeMax = 48;
+        etiqueta.margin = new Vector4(8f, 0f, 8f, 0f);
         return boton;
     }
 

@@ -76,24 +76,37 @@ Unity Hub y Unity **2022.3.62f3**, con el módulo de Android, ya están instalad
 ## 5. Abrir el proyecto y armar la escena
 1. En Unity Hub usen **Add**, luego **Add project from disk**, y elijan la carpeta `SistemaSolarRA`. Ábranlo. La primera vez tarda unos minutos.
 2. Si aparece el aviso **Import TMP Essentials**, acéptenlo. Si no aparece, usen **Window > TextMeshPro > Import TMP Essential Resources**.
-3. Importen Vuforia: usen **Assets > Import Package > Custom Package**, elijan `add-vuforia-package-*.unitypackage` y acepten todo.
+3. Importen Vuforia: usen **Assets > Import Package > Custom Package**, elijan `add-vuforia-package-*.unitypackage` y acepten todo. Cuando pregunte **Update**, acepten. *(En esta PC ya está hecho: Vuforia 11.4.4 está en `Packages/`.)*
 4. Importen la base de datos del cubo (`CuboSistemaSolar.unitypackage`) de la misma forma.
-5. Abran **Window > Vuforia Configuration** y peguen la **App License Key**.
+5. **Licencia:** guarden la clave en `licencia-vuforia.txt`, junto a la carpeta `SistemaSolarRA` (ese archivo no se sube a git). El menú del paso 6 la carga sola. Si prefieren, péguenla a mano en **Window > Vuforia Configuration**.
 6. Usen el menú **Sistema Solar > 1. Crear escena**. Crea la AR Camera, el Multi Target, los materiales, el sistema solar y la interfaz, y guarda la escena.
 7. Usen el menú **Sistema Solar > 2. Configurar Android**. Deja el proyecto listo para Android; el cambio de plataforma puede tardar.
 8. Seleccionen **MultiTarget** y, en el Inspector, revisen que estén elegidos la base `CuboSistemaSolar` y el target `CuboSolar`.
 9. **Revisen la orientación.** En la vista Scene se ve el cubo con sus 6 caras. Compárenlo con el cubo armado: los números de caras vecinas deben coincidir. Si una cara está en otro lugar o girada, corrijan esa imagen en Target Manager y descarguen la base de nuevo.
 
-**Texturas reales de los planetas (opcional, pero se ve mucho mejor):** descárguenlas de https://www.solarsystemscope.com/textures/ (licencia CC BY 4.0: hay que citar la fuente en la exposición). Pónganlas en `Assets/Texturas` **antes** del paso 6 y el menú las asigna solo según el nombre del archivo (`2k_mars`, `2k_jupiter`, etc.).
+**Texturas:** ya están en `Assets/Texturas`: los planetas, el Sol, la Luna, las nubes de la Tierra, el anillo de Saturno y el cielo estrellado de la vista previa. Son de https://www.solarsystemscope.com/textures/, con licencia CC BY 4.0, así que **hay que citar la fuente en la exposición**. El menú del paso 6 las asigna solo según el nombre del archivo.
 
 Si el sistema se ve muy grande o muy chico, seleccionen **SistemaSolar** (dentro de MultiTarget) y cambien **Radio Sistema** y **Tamaño Base**.
 
 ## 6. Probar en la PC
-Conecten una webcam y presionen **Play**. Vuforia usa la webcam. Muestren el cubo impreso: debe aparecer el sistema solar, y con clic sobre un planeta se abre su ficha.
+- **Sin cubo ni Vuforia:** abran `SistemaSolarRA/Builds/VistaPreviaPC/SistemaSolar.exe`, o en Unity usen el menú **Sistema Solar > 0. Vista previa en PC (sin RA)** y presionen Play. Para girar la cámara usen clic derecho y arrastren; la rueda acerca y aleja. Si no la tocan, gira sola.
+- **Con RA:** conecten una webcam y presionen **Play** en la escena `SistemaSolar`. Vuforia usa la webcam. Muestren el cubo impreso: debe aparecer el sistema solar, y con clic sobre un planeta se abre su ficha.
 
-## 7. Instalar en el celular (Android)
-1. En el celular activen **Opciones de desarrollador** y luego **Depuración USB**, y conéctenlo con un cable.
-2. En Unity usen **File > Build And Run**.
+## 7. Crear el APK e instalarlo en el celular (Android)
+El APK se compila **una sola vez**. Después queda instalado como cualquier app y no hay que volver a compilar para mostrarlo.
+1. En Unity usen el menú **Sistema Solar > 3. Compilar APK**. Al terminar se abre la carpeta `SistemaSolarRA/Builds/Android/` con `SistemaSolarRA.apk`.
+2. Pasen el APK al celular por cable, Google Drive o WhatsApp y ábranlo. Android pedirá permiso para "instalar apps de origen desconocido": acéptenlo.
+3. Abran la app, denle permiso de cámara y apunten al cubo.
+
+Otra opción: con el celular conectado por USB y la **Depuración USB** activada, usen **File > Build And Run**.
+
+## Qué hace la app (para contarlo en la exposición)
+- **Aparición animada:** al detectar el cubo, el Sol aparece desde cero con un rebote y los planetas salen uno por uno hacia sus órbitas, con sonido. Si el cubo se pierde más de un segundo, la animación se repite al volver a verlo.
+- **El Sol ilumina de verdad:** es la única luz de la escena, así que cada planeta tiene un lado de día y otro de noche. Además tiene resplandor, una corona de chispas y un halo naranja.
+- **Detalles reales:** texturas de la NASA y Solar System Scope, inclinación real del eje (Urano gira "acostado" y Venus está "de cabeza"), nubes y atmósfera en la Tierra, la Luna (que siempre muestra la misma cara), el anillo de Saturno con su textura real y el cinturón de asteroides entre Marte y Júpiter.
+- **Estelas y estrellas:** cada planeta deja una estela de su color, y alrededor del cubo hay una cúpula de estrellas que titilan.
+- **Interacción:** al tocar un planeta, crece, brilla y se abre su ficha con una animación. La Luna también se puede tocar. Los planetas pequeños tienen un área de toque más grande para que sea fácil tocarlos en el celular.
+- **Sonido:** música ambiental espacial, un sonido al tocar y otro al aparecer. Todo se genera por código y se apaga con el botón **Sonido**.
 
 ## 8. Problemas frecuentes
 | Problema | Solución |
@@ -110,8 +123,11 @@ Conecten una webcam y presionen **Play**. Vuforia usa la webcam. Muestren el cub
 ## 9. Mejoras opcionales (si sobra tiempo)
 - **Modo guiado** (como Dynamics 365 Guides): botones Anterior y Siguiente que recorren los planetas uno por uno.
 - **Quiz**: preguntas al final, como "¿Cuál es el planeta más caliente?".
-- **Audio**: narración para cada planeta.
+- **Narración**: una voz que lea los datos de cada planeta.
+- **Controlar con el cubo**: por ejemplo, inclinar el cubo para cambiar la velocidad.
 
 ## 10. Para la exposición
 - Cambien la diapositiva 14. En lugar de "Modelo para nuestro proyecto: Merge Cube y Dynamics 365 Guides", pongan: **"Modelo para nuestro proyecto: la interacción con marcadores de Merge Cube"**.
-- Fuentes que deben citar: NASA Planetary Fact Sheet (datos de los planetas), Solar System Scope (texturas, si las usan), y la documentación de Vuforia Engine.
+- Fuentes que deben citar: NASA Planetary Fact Sheet (datos de los planetas), Solar System Scope (texturas, CC BY 4.0) y la documentación de Vuforia Engine.
+- Lleven el APK instalado, el `.exe` de vista previa como respaldo y un video grabado por si falla algo. Para proyectar la pantalla del celular usen **scrcpy**.
+- **Para impresionar:** denle el cubo al profesor para que él mismo lo gire.

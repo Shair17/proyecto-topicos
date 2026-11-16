@@ -8,3 +8,10 @@ SistemaSolarRA/[Uu]ser[Ss]ettings/
 *.csproj
 *.sln
 *.apk
+
+# Clave de Vuforia (privada)
+licencia-vuforia.txt
+SistemaSolarRA/Assets/Resources/VuforiaConfiguration.asset*
+*.log
+# Paquete de Vuforia (132 MB, GitHub no lo acepta). Se reinstala con add-vuforia-package-*.unitypackage
+SistemaSolarRA/Packages/*.tgz

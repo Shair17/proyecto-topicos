@@ -39,6 +39,7 @@ public class PlanetSelector : MonoBehaviour
         seleccionado = planeta;
         seleccionado.Resaltar(true);
         panel.Mostrar(planeta.datos);
+        if (SonidoEspacial.Instancia != null) SonidoEspacial.Instancia.Toque();
     }
 
     public void Deseleccionar()

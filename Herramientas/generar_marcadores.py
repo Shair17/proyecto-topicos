@@ -148,7 +148,10 @@ def main():
     caras = {n: generar_cara(s, sim) for n, (s, sim) in CARAS.items()}
     for n, img in caras.items():
         img.save(SALIDA / f"cara_{n}.png", optimize=True)
-    plantilla(caras).save(SALIDA / "cubo_imprimible_A4.png", dpi=(DPI, DPI))
+    hoja = plantilla(caras)
+    hoja.save(SALIDA / "cubo_imprimible_A4.png", dpi=(DPI, DPI))
+    # PDF de tamaño A4 exacto: se imprime al 100 % con "Tamaño real" sin que el visor lo escale
+    hoja.convert("RGB").save(SALIDA / "cubo_imprimible_A4.pdf", resolution=DPI)
     print(f"Listo: {SALIDA}")
 
 

@@ -17,7 +17,8 @@ public static class SistemaSolarSetup
         new[] { "earth", "tierra" }, new[] { "mars", "marte" }, new[] { "jupiter" },
         new[] { "saturn", "saturno" }, new[] { "uranus", "urano" }, new[] { "neptune", "neptuno" },
     };
-    static readonly string[] TexturasExcluidas = { "ring", "anillo", "cloud", "night", "normal", "specular", "atmosphere" };
+    static readonly string[] TexturasExcluidas =
+        { "ring", "anillo", "cloud", "nubes", "night", "normal", "specular", "moon", "luna", "stars", "estrellas" };
 
     [MenuItem("Sistema Solar/1. Crear escena", priority = 1)]
     public static void CrearEscena()
@@ -30,6 +31,7 @@ public static class SistemaSolarSetup
             return;
         }
         if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) return;
+        bool licenciaOk = CargarLicenciaVuforia();
 
         var escena = EditorSceneManager.NewScene(NewSceneSetup.DefaultGameObjects, NewSceneMode.Single);
         var camaraVieja = GameObject.Find("Main Camera");
@@ -48,17 +50,7 @@ public static class SistemaSolarSetup
         bool filtroOk = FiltrarSoloTracked(multiTarget);
 
         // Sistema solar dentro del cubo
-        var sistema = new GameObject("SistemaSolar");
-        sistema.transform.SetParent(multiTarget.transform, false);
-        var builder = sistema.AddComponent<SolarSystemBuilder>();
-        builder.materialPlaneta = CrearMaterial("Mat_Planeta", "Standard", m => m.SetFloat("_Glossiness", 0.2f));
-        builder.materialSol = CrearMaterial("Mat_Sol", "Standard", m =>
-        {
-            m.EnableKeyword("_EMISSION");
-            m.SetColor("_EmissionColor", new Color(1f, 0.6f, 0.1f) * 0.7f);
-        });
-        builder.materialOrbita = CrearMaterial("Mat_Orbita", "Sprites/Default", null);
-        int texturas = AsignarTexturas(builder);
+        int texturas = CrearSistemaSolar(multiTarget.transform);
 
         // Interfaz
         new GameObject("GestorApp").AddComponent<AppUIBuilder>();
@@ -73,11 +65,101 @@ public static class SistemaSolarSetup
             "Revisen en el Inspector del MultiTarget que esté elegida la base de datos del cubo.\n" +
             $"Texturas de planetas asignadas: {texturas} de 9 (opcionales, van en {RutaTexturas}).\n" +
             (filtroOk ? "" : "\nNo se pudo poner el filtro en 'Tracked': cámbienlo a mano en Default Observer Event Handler.\n") +
+            (licenciaOk ? "" : "\nNo se cargó la licencia: péguenla a mano en Window > Vuforia Configuration.\n") +
             "\nSiguiente paso: menú Sistema Solar > 2. Configurar Android.", "OK");
+    }
+
+    const string RutaEscenaPC = "Assets/Scenes/VistaPreviaPC.unity";
+    const string RutaExePC = "Builds/VistaPreviaPC/SistemaSolar.exe";
+
+    // Escena sin Vuforia: cámara normal que gira alrededor del Sol. Sirve para probar en la PC.
+    [MenuItem("Sistema Solar/0. Vista previa en PC (sin RA)", priority = 0)]
+    public static void CrearVistaPreviaPC()
+    {
+        if (!Application.isBatchMode && !EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) return;
+
+        var escena = EditorSceneManager.NewScene(NewSceneSetup.DefaultGameObjects, NewSceneMode.Single);
+        var camara = Camera.main;
+        camara.clearFlags = CameraClearFlags.SolidColor;
+        camara.backgroundColor = new Color(0.01f, 0.01f, 0.03f);
+        var cielo = BuscarTextura("estrellas", "stars");
+        if (cielo != null)
+        {
+            RenderSettings.skybox = CrearMaterial("Mat_Cielo", "Skybox/Panoramic", m =>
+            {
+                m.SetTexture("_MainTex", cielo);
+                m.SetFloat("_Exposure", 0.55f);
+            });
+            camara.clearFlags = CameraClearFlags.Skybox;
+        }
+        camara.nearClipPlane = 0.01f;
+        camara.farClipPlane = 20f;
+        camara.gameObject.AddComponent<CamaraVistaPrevia>();
+
+        // La única luz es la del Sol (la crea SolarSystemBuilder).
+        var luz = Object.FindObjectOfType<Light>();
+        if (luz != null) Object.DestroyImmediate(luz.gameObject);
+
+        CrearSistemaSolar(null);
+        new GameObject("GestorApp").AddComponent<AppUIBuilder>();
+
+        System.IO.Directory.CreateDirectory("Assets/Scenes");
+        EditorSceneManager.SaveScene(escena, RutaEscenaPC);
+        if (!Application.isBatchMode)
+            EditorUtility.DisplayDialog("Vista previa lista",
+                "Escena guardada en " + RutaEscenaPC + ". Presionen Play.\n\n" +
+                "Clic izquierdo en un planeta = ver su ficha. Clic derecho + arrastrar = girar. Rueda = zoom.", "OK");
+    }
+
+    // Para la terminal: Unity.exe -batchmode -quit -projectPath ... -executeMethod SistemaSolarSetup.CompilarVistaPreviaPC
+    public static void CompilarVistaPreviaPC()
+    {
+        CrearVistaPreviaPC();
+        PlayerSettings.productName = "SistemaSolarRA";
+        PlayerSettings.fullScreenMode = FullScreenMode.Windowed;
+        PlayerSettings.defaultScreenWidth = 540;
+        PlayerSettings.defaultScreenHeight = 960;
+        PlayerSettings.resizableWindow = true;
+        var reporte = BuildPipeline.BuildPlayer(new[] { RutaEscenaPC }, RutaExePC,
+            BuildTarget.StandaloneWindows64, BuildOptions.None);
+        Debug.Log("RESULTADO_BUILD: " + reporte.summary.result + " -> " + RutaExePC);
+        if (Application.isBatchMode && reporte.summary.result != UnityEditor.Build.Reporting.BuildResult.Succeeded)
+            EditorApplication.Exit(1);
+    }
+
+    static int CrearSistemaSolar(Transform padre)
+    {
+        var sistema = new GameObject("SistemaSolar");
+        sistema.transform.SetParent(padre, false);
+        var builder = sistema.AddComponent<SolarSystemBuilder>();
+        builder.materialPlaneta = CrearMaterial("Mat_Planeta", "Standard", m =>
+        {
+            m.SetFloat("_Glossiness", 0.15f);
+            m.SetFloat("_Metallic", 0f);
+        });
+        builder.materialSol = CrearMaterial("Mat_Sol", "Unlit/Texture", null);
+        builder.materialOrbita = CrearMaterial("Mat_Orbita", "Sprites/Default", null);
+        builder.materialTransparente = CrearMaterial("Mat_Transparente", "Legacy Shaders/Transparent/Diffuse", null);
+        builder.materialAditivo = CrearMaterial("Mat_Brillo", "Legacy Shaders/Particles/Additive", null);
+        builder.materialAtmosfera = CrearMaterial("Mat_Atmosfera", "SistemaSolar/Atmosfera", null);
+
+        builder.texturaAnillo = BuscarTextura("anillo", "ring");
+        builder.texturaLuna = BuscarTextura("luna", "moon");
+        builder.texturaNubes = BuscarTextura("nubes", "cloud");
+        if (builder.texturaNubes != null) AlfaDesdeGrises(builder.texturaNubes);
+        return AsignarTexturas(builder);
     }
 
     [MenuItem("Sistema Solar/2. Configurar Android", priority = 2)]
     public static void ConfigurarAndroid()
+    {
+        ConfigurarAndroidSinDialogo();
+        EditorUtility.DisplayDialog("Android listo",
+            "Proyecto configurado para Android (IL2CPP, ARM64, vertical).\n\n" +
+            "Siguiente paso: menú Sistema Solar > 3. Compilar APK (o File > Build And Run con el celular conectado).", "OK");
+    }
+
+    static void ConfigurarAndroidSinDialogo()
     {
         PlayerSettings.companyName = "UNT";
         PlayerSettings.productName = "SistemaSolarRA";
@@ -90,16 +172,114 @@ public static class SistemaSolarSetup
 
         if (EditorUserBuildSettings.activeBuildTarget != BuildTarget.Android)
             EditorUserBuildSettings.SwitchActiveBuildTarget(BuildTargetGroup.Android, BuildTarget.Android);
+    }
 
-        EditorUtility.DisplayDialog("Android listo",
-            "Proyecto configurado para Android (IL2CPP, ARM64, vertical).\n\n" +
-            "Para instalar en el celular: activen Depuración USB, conéctenlo y usen File > Build And Run.", "OK");
+    const string RutaApk = "Builds/Android/SistemaSolarRA.apk";
+
+    // Compila el APK una sola vez; después solo se instala en el celular y se abre como cualquier app.
+    [MenuItem("Sistema Solar/3. Compilar APK", priority = 3)]
+    public static void CompilarAPK()
+    {
+        if (!System.IO.File.Exists(RutaEscena))
+        {
+            Debug.LogError("Falta la escena " + RutaEscena + ": usen primero el menú 1. Crear escena.");
+            if (!Application.isBatchMode)
+                EditorUtility.DisplayDialog("Falta la escena", "Usen primero el menú Sistema Solar > 1. Crear escena.", "OK");
+            return;
+        }
+        ConfigurarAndroidSinDialogo();
+        EditorUserBuildSettings.buildAppBundle = false;
+        System.IO.Directory.CreateDirectory("Builds/Android");
+        var reporte = BuildPipeline.BuildPlayer(new[] { RutaEscena }, RutaApk, BuildTarget.Android, BuildOptions.None);
+        bool ok = reporte.summary.result == UnityEditor.Build.Reporting.BuildResult.Succeeded;
+        Debug.Log("RESULTADO_BUILD: " + reporte.summary.result + " -> " + RutaApk);
+        if (Application.isBatchMode)
+        {
+            if (!ok) EditorApplication.Exit(1);
+            return;
+        }
+        if (ok) EditorUtility.RevealInFinder(RutaApk);
+        EditorUtility.DisplayDialog(ok ? "APK listo" : "Error al compilar",
+            ok ? "Se creó " + RutaApk + ".\n\nPásenlo al celular (cable, Drive o WhatsApp) e instálenlo. " +
+                 "Ya no hace falta compilar de nuevo para mostrarlo."
+               : "Revisen la consola (Window > General > Console).", "OK");
+    }
+
+    const string RutaApkVistaPrevia = "Builds/Android/SistemaSolar_VistaPrevia.apk";
+
+    // APK sin RA (no necesita Vuforia): el sistema solar en 3D con controles táctiles. Sirve para mostrarlo ya.
+    // Usa otro identificador para poder tener instaladas las dos apps a la vez.
+    public static void CompilarVistaPreviaAndroid()
+    {
+        CrearVistaPreviaPC();
+        string idOriginal = PlayerSettings.GetApplicationIdentifier(BuildTargetGroup.Android);
+        string nombreOriginal = PlayerSettings.productName;
+        ConfigurarAndroidSinDialogo();
+        PlayerSettings.SetApplicationIdentifier(BuildTargetGroup.Android, "pe.edu.unt.sistemasolarra.vistaprevia");
+        PlayerSettings.productName = "Sistema Solar 3D";
+        EditorUserBuildSettings.buildAppBundle = false;
+        System.IO.Directory.CreateDirectory("Builds/Android");
+        var reporte = BuildPipeline.BuildPlayer(new[] { RutaEscenaPC }, RutaApkVistaPrevia, BuildTarget.Android, BuildOptions.None);
+        PlayerSettings.SetApplicationIdentifier(BuildTargetGroup.Android, idOriginal);
+        PlayerSettings.productName = nombreOriginal;
+        Debug.Log("RESULTADO_BUILD: " + reporte.summary.result + " -> " + RutaApkVistaPrevia);
+        if (Application.isBatchMode && reporte.summary.result != UnityEditor.Build.Reporting.BuildResult.Succeeded)
+            EditorApplication.Exit(1);
+    }
+
+    static Texture2D BuscarTextura(params string[] claves)
+    {
+        if (!AssetDatabase.IsValidFolder(RutaTexturas)) return null;
+        var ruta = AssetDatabase.FindAssets("t:Texture2D", new[] { RutaTexturas })
+            .Select(AssetDatabase.GUIDToAssetPath)
+            .FirstOrDefault(r => claves.Any(k => System.IO.Path.GetFileNameWithoutExtension(r).ToLower().Contains(k)));
+        return ruta == null ? null : AssetDatabase.LoadAssetAtPath<Texture2D>(ruta);
+    }
+
+    // Las nubes vienen en blanco sobre negro: el gris se usa como transparencia.
+    static void AlfaDesdeGrises(Texture2D textura)
+    {
+        var importador = AssetImporter.GetAtPath(AssetDatabase.GetAssetPath(textura)) as TextureImporter;
+        if (importador == null || importador.alphaSource == TextureImporterAlphaSource.FromGrayScale) return;
+        importador.alphaSource = TextureImporterAlphaSource.FromGrayScale;
+        importador.alphaIsTransparency = true;
+        importador.SaveAndReimport();
     }
 
     static bool VuforiaImportado()
     {
         return System.AppDomain.CurrentDomain.GetAssemblies()
             .Any(a => a.GetType("Vuforia.VuforiaBehaviour") != null);
+    }
+
+    // Lee la clave de licencia de "licencia-vuforia.txt" (junto a la carpeta SistemaSolarRA, fuera de git)
+    // y la pone en VuforiaConfiguration. Usa reflexión para no depender de la API de Vuforia al compilar.
+    // También se puede usar con -executeMethod SistemaSolarSetup.CargarLicenciaVuforia
+    public static bool CargarLicenciaVuforia()
+    {
+        string ruta = System.IO.Path.GetFullPath(System.IO.Path.Combine("..", "licencia-vuforia.txt"));
+        if (!System.IO.File.Exists(ruta)) { Debug.LogWarning("No existe " + ruta); return false; }
+        string clave = System.IO.File.ReadAllText(ruta).Trim();
+        if (clave.Length == 0) return false;
+
+        var tipo = System.AppDomain.CurrentDomain.GetAssemblies()
+            .Select(a => a.GetType("Vuforia.VuforiaConfiguration")).FirstOrDefault(t => t != null);
+        var config = tipo?.GetProperty("Instance")?.GetValue(null) as Object;
+        var generica = tipo?.GetProperty("Vuforia")?.GetValue(config);
+        var propClave = generica?.GetType().GetProperty("LicenseKey");
+        if (config == null || propClave == null) { Debug.LogWarning("No se encontró VuforiaConfiguration"); return false; }
+
+        propClave.SetValue(generica, clave);
+        if (string.IsNullOrEmpty(AssetDatabase.GetAssetPath(config)))
+        {
+            // Vuforia todavía no guardó su configuración (pasa si nunca se abrió en el editor)
+            System.IO.Directory.CreateDirectory("Assets/Resources");
+            AssetDatabase.CreateAsset(config, "Assets/Resources/VuforiaConfiguration.asset");
+        }
+        EditorUtility.SetDirty(config);
+        AssetDatabase.SaveAssets();
+        Debug.Log("Licencia de Vuforia cargada en " + AssetDatabase.GetAssetPath(config));
+        return true;
     }
 
     static GameObject CrearDesdeMenu(string menu)
@@ -136,14 +316,21 @@ public static class SistemaSolarSetup
     {
         System.IO.Directory.CreateDirectory(RutaMateriales);
         string ruta = $"{RutaMateriales}/{nombre}.mat";
-        var existente = AssetDatabase.LoadAssetAtPath<Material>(ruta);
-        if (existente != null) return existente;
-
         var sh = Shader.Find(shader);
         if (sh == null)
         {
             Debug.LogWarning($"Shader '{shader}' no encontrado; se usa Standard para {nombre}.");
             sh = Shader.Find("Standard");
+        }
+        // Si el material ya existe se actualiza (así los cambios llegan también a los materiales viejos).
+        var existente = AssetDatabase.LoadAssetAtPath<Material>(ruta);
+        if (existente != null)
+        {
+            existente.shader = sh;
+            ajustar?.Invoke(existente);
+            EditorUtility.SetDirty(existente);
+            AssetDatabase.SaveAssets();
+            return existente;
         }
         var mat = new Material(sh);
         ajustar?.Invoke(mat);
