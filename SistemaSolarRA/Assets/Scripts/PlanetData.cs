@@ -28,44 +28,57 @@ public class PlanetData
             new PlanetData { nombre = "Sol", tipo = "Estrella (enana amarilla)", diametro = "1 392 700 km",
                 distanciaSol = "-", duracionDia = "≈ 27 días (ecuador)", duracionAnio = "-", lunas = 0,
                 datoCurioso = "Concentra el 99,8 % de la masa de todo el sistema solar.",
-                color = new Color(1f, 0.78f, 0.2f), tamanoRelativo = 1.2f, radioOrbitaRelativo = 0f, velocidadOrbita = 0f },
+                color = new Color(1f, 0.78f, 0.2f), tamanoRelativo = 1.4f, radioOrbitaRelativo = 0f, velocidadOrbita = 0f },
+            
             new PlanetData { nombre = "Mercurio", tipo = "Planeta rocoso", diametro = "4 879 km",
                 distanciaSol = "57,9 millones de km", duracionDia = "176 días terrestres", duracionAnio = "88 días", lunas = 0,
                 datoCurioso = "Es el planeta más pequeño y el más cercano al Sol.",
-                color = new Color(0.6f, 0.58f, 0.55f), tamanoRelativo = 0.12f, radioOrbitaRelativo = 0.22f, velocidadOrbita = 4.1f },
+                color = new Color(0.6f, 0.58f, 0.55f), tamanoRelativo = 0.035f, radioOrbitaRelativo = 0.15f, velocidadOrbita = 4.1f },
+            
             new PlanetData { nombre = "Venus", tipo = "Planeta rocoso", diametro = "12 104 km",
                 distanciaSol = "108,2 millones de km", duracionDia = "243 días terrestres", duracionAnio = "225 días", lunas = 0,
                 datoCurioso = "Es el planeta más caliente (≈ 465 °C) por su efecto invernadero.",
-                color = new Color(0.93f, 0.75f, 0.45f), tamanoRelativo = 0.2f, radioOrbitaRelativo = 0.31f, velocidadOrbita = 1.6f },
+                color = new Color(0.93f, 0.75f, 0.45f), tamanoRelativo = 0.08f, radioOrbitaRelativo = 0.25f, velocidadOrbita = 1.6f },
+            
             new PlanetData { nombre = "Tierra", tipo = "Planeta rocoso", diametro = "12 756 km",
                 distanciaSol = "149,6 millones de km", duracionDia = "24 horas", duracionAnio = "365,25 días", lunas = 1,
                 datoCurioso = "El único planeta conocido con agua líquida en su superficie y vida.",
-                color = new Color(0.2f, 0.45f, 0.9f), tamanoRelativo = 0.21f, radioOrbitaRelativo = 0.41f, velocidadOrbita = 1f },
+                color = new Color(0.2f, 0.45f, 0.9f), tamanoRelativo = 0.085f, radioOrbitaRelativo = 0.35f, velocidadOrbita = 1f },
+            
             new PlanetData { nombre = "Marte", tipo = "Planeta rocoso", diametro = "6 792 km",
                 distanciaSol = "227,9 millones de km", duracionDia = "24,6 horas", duracionAnio = "687 días", lunas = 2,
                 datoCurioso = "Tiene el Monte Olimpo, el volcán más grande del sistema solar.",
-                color = new Color(0.85f, 0.35f, 0.2f), tamanoRelativo = 0.15f, radioOrbitaRelativo = 0.51f, velocidadOrbita = 0.53f },
+                color = new Color(0.85f, 0.35f, 0.2f), tamanoRelativo = 0.05f, radioOrbitaRelativo = 0.47f, velocidadOrbita = 0.53f },
+            
             new PlanetData { nombre = "Júpiter", tipo = "Gigante gaseoso", diametro = "142 984 km",
                 distanciaSol = "778,5 millones de km", duracionDia = "9,9 horas", duracionAnio = "11,9 años", lunas = 95,
                 datoCurioso = "Su Gran Mancha Roja es una tormenta más grande que la Tierra.",
-                color = new Color(0.85f, 0.7f, 0.55f), tamanoRelativo = 0.45f, radioOrbitaRelativo = 0.72f, velocidadOrbita = 0.084f },
+                color = new Color(0.85f, 0.7f, 0.55f), tamanoRelativo = 0.55f, radioOrbitaRelativo = 0.70f, velocidadOrbita = 0.084f },
+            
             new PlanetData { nombre = "Saturno", tipo = "Gigante gaseoso", diametro = "120 536 km",
                 distanciaSol = "1 432 millones de km", duracionDia = "10,7 horas", duracionAnio = "29,4 años", lunas = 146,
                 datoCurioso = "Su densidad es tan baja que flotaría en el agua.",
-                color = new Color(0.92f, 0.83f, 0.6f), tamanoRelativo = 0.38f, radioOrbitaRelativo = 0.96f, velocidadOrbita = 0.034f },
+                color = new Color(0.92f, 0.83f, 0.6f), tamanoRelativo = 0.48f, radioOrbitaRelativo = 0.95f, velocidadOrbita = 0.034f },
+            
             new PlanetData { nombre = "Urano", tipo = "Gigante helado", diametro = "51 118 km",
                 distanciaSol = "2 867 millones de km", duracionDia = "17,2 horas", duracionAnio = "84 años", lunas = 28,
                 datoCurioso = "Gira 'acostado': su eje está inclinado unos 98°.",
-                color = new Color(0.55f, 0.85f, 0.9f), tamanoRelativo = 0.28f, radioOrbitaRelativo = 1.18f, velocidadOrbita = 0.012f },
+                color = new Color(0.55f, 0.85f, 0.9f), tamanoRelativo = 0.28f, radioOrbitaRelativo = 1.25f, velocidadOrbita = 0.012f },
+            
             new PlanetData { nombre = "Neptuno", tipo = "Gigante helado", diametro = "49 528 km",
                 distanciaSol = "4 515 millones de km", duracionDia = "16,1 horas", duracionAnio = "164,8 años", lunas = 16,
                 datoCurioso = "Tiene los vientos más rápidos del sistema solar (≈ 2 000 km/h).",
-                color = new Color(0.25f, 0.4f, 0.95f), tamanoRelativo = 0.27f, radioOrbitaRelativo = 1.34f, velocidadOrbita = 0.006f },
+                color = new Color(0.25f, 0.4f, 0.95f), tamanoRelativo = 0.27f, radioOrbitaRelativo = 1.50f, velocidadOrbita = 0.006f },
+            
+            new PlanetData { nombre = "Plutón", tipo = "Planeta enano", diametro = "2 376 km",
+                distanciaSol = "5 906 millones de km", duracionDia = "6,4 días terrestres", duracionAnio = "248 años", lunas = 5,
+                datoCurioso = "Fue considerado el noveno planeta del sistema solar hasta 2006.",
+                color = new Color(0.8f, 0.75f, 0.65f), tamanoRelativo = 0.025f, radioOrbitaRelativo = 1.75f, velocidadOrbita = 0.004f },
         };
 
         // Inclinación real del eje (Venus y Urano casi "de cabeza" y "acostado") y giro sobre sí mismos.
-        float[] inclinacion = { 7.25f, 0.03f, 177.4f, 23.4f, 25.2f, 3.1f, 26.7f, 97.8f, 28.3f };
-        float[] giro = { 8f, 6f, 4f, 45f, 43f, 110f, 100f, 70f, 75f };
+        float[] inclinacion = { 7.25f, 0.03f, 177.4f, 23.4f, 25.2f, 3.1f, 26.7f, 97.8f, 28.3f, 122.5f };
+        float[] giro = { 8f, 6f, 4f, 45f, 43f, 110f, 100f, 70f, 75f, 50f };
         for (int i = 0; i < cuerpos.Length; i++)
         {
             cuerpos[i].inclinacionEje = inclinacion[i];

@@ -1,17 +1,12 @@
 using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.UI;
 #if ENABLE_INPUT_SYSTEM
 using UnityEngine.InputSystem;
 #endif
 
-// Modo visor: RV INMERSIVA con un visor tipo Google Cardboard (el celular va dentro del visor).
-// - Divide la pantalla en dos imágenes, una por ojo, tomadas desde puntos un poco separados: eso da profundidad
-//   (visión estereoscópica, como hacen los ojos).
-// - Se mira girando la cabeza (giroscopio). En PC se puede probar arrastrando el mouse.
-// - Se elige con la mirada: mantener la mira sobre un planeta 2 segundos viaja hasta él.
-//   Tocar la pantalla (o el botón del visor) viaja de inmediato; tocar mirando al vacío vuelve a la vista general.
-// - Atrás (Android) o Esc salen del modo.
+// Modo visor: RV INMERSIVA adaptado con la óptica estéreo exacta de visores TITI VR / YouTube VR.
 public class ModoVisor : MonoBehaviour
 {
     public Canvas canvasNormal;
@@ -20,20 +15,21 @@ public class ModoVisor : MonoBehaviour
     public PlanetSelector selector;
     public QuizPlanetas quiz;
     public Material materialAditivo;
-    public float separacionOjos = 0.0025f;   // proporcional a la escala de la escena
-    public float campoVisual = 75f;
+    
+    [Header("Ajustes de Óptica Estéreo TITI VR")]
+    public float separacionOjos = 0.024f;   // Distancia IPD optimizada para visores tipo Cardboard / TITI VR
+    public float campoVisual = 85f;          // FOV amplio para compensar el aumento de las lentes físicas
+    [Range(0.6f, 0.9f)]
+    public float escalaLente = 0.75f;        // Tamaño de los círculos de las lentes estilo YouTube VR
     public float tiempoMirada = 2f;
     public System.Action<bool> alCambiar;
-
-    const float DistanciaMira = 0.05f;
 
     public bool Activo { get; private set; }
 
     CamaraExplorador explorador;
     Camera principal, ojoIzquierdo, ojoDerecho;
-    Transform mira;
-    Material materialMira;
-    TextMeshPro textoVR;
+    
+    GameObject canvasOverlayVR;
     bool giroscopioAntes;
     PlanetInfo mirando, elegido;
     float tMirada, ocultarTextoEn;
@@ -53,12 +49,19 @@ public class ModoVisor : MonoBehaviour
         explorador = CamaraExplorador.Instancia;
         if (explorador == null || Activo) return;
         principal = explorador.GetComponent<Camera>();
+        
         if (ojoIzquierdo == null)
         {
-            ojoIzquierdo = CrearOjo("OjoIzquierdo", -1f, new Rect(0f, 0f, 0.5f, 1f));
-            ojoDerecho = CrearOjo("OjoDerecho", 1f, new Rect(0.5f, 0f, 0.5f, 1f));
-            CrearMiraYTexto();
+            // Viewports divididos exactamente al 50% para cada ojo
+            float ancho = 0.5f;
+            float alto = 1f;
+
+            ojoIzquierdo = CrearOjo("OjoIzquierdo", -1f, new Rect(0f, 0f, ancho, alto));
+            ojoDerecho = CrearOjo("OjoDerecho", 1f, new Rect(0.5f, 0f, ancho, alto));
+            
+            CrearInterfazEstereoYouTubeVR(); 
         }
+        
         MostrarElementos(true);
         principal.enabled = false;
         if (canvasNormal != null) canvasNormal.enabled = false;
@@ -95,10 +98,9 @@ public class ModoVisor : MonoBehaviour
 
     void MostrarElementos(bool mostrar)
     {
-        ojoIzquierdo.gameObject.SetActive(mostrar);
-        ojoDerecho.gameObject.SetActive(mostrar);
-        mira.gameObject.SetActive(mostrar);
-        textoVR.gameObject.SetActive(mostrar);
+        if (ojoIzquierdo != null) ojoIzquierdo.gameObject.SetActive(mostrar);
+        if (ojoDerecho != null) ojoDerecho.gameObject.SetActive(mostrar);
+        if (canvasOverlayVR != null) canvasOverlayVR.SetActive(mostrar);
     }
 
     Camera CrearOjo(string nombre, float lado, Rect rect)
@@ -106,40 +108,111 @@ public class ModoVisor : MonoBehaviour
         var go = new GameObject(nombre);
         go.transform.SetParent(principal.transform, false);
         var camara = go.AddComponent<Camera>();
-        camara.CopyFrom(principal); // copia fondo, planos de recorte, etc. (también la posición: se corrige abajo)
+        camara.CopyFrom(principal); 
         camara.rect = rect;
-        camara.fieldOfView = campoVisual;
+        camara.fieldOfView = campoVisual; // FOV calibrado para el aumento de las lentes TITI VR
+        camara.clearFlags = CameraClearFlags.SolidColor;
+        camara.backgroundColor = Color.black;
+        
         go.transform.localPosition = new Vector3(lado * separacionOjos * 0.5f, 0f, 0f);
         go.transform.localRotation = Quaternion.identity;
+        go.transform.localScale = Vector3.one;
         return camara;
     }
 
-    void CrearMiraYTexto()
+    void CrearInterfazEstereoYouTubeVR()
     {
-        // Mira: un punto brillante en el centro de la vista.
-        var quad = GameObject.CreatePrimitive(PrimitiveType.Quad);
-        quad.name = "Mira";
-        Destroy(quad.GetComponent<Collider>());
-        mira = quad.transform;
-        mira.SetParent(principal.transform, false);
-        mira.localPosition = new Vector3(0f, 0f, DistanciaMira);
-        materialMira = new Material(materialAditivo) { mainTexture = Procedural.TexturaBrillo() };
-        quad.GetComponent<Renderer>().material = materialMira;
+        canvasOverlayVR = new GameObject("Overlay_TITI_VR");
+        Canvas canvas = canvasOverlayVR.AddComponent<Canvas>();
+        canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+        canvas.sortingOrder = 100;
 
-        // Texto flotando debajo de la mira (lo ven los dos ojos).
-        var go = new GameObject("TextoVisor");
-        go.transform.SetParent(principal.transform, false);
-        go.transform.localPosition = new Vector3(0f, -0.004f, DistanciaMira);
-        go.transform.localScale = Vector3.one * 0.032f;
-        textoVR = go.AddComponent<TextMeshPro>();
-        textoVR.fontSize = 1f;
-        textoVR.alignment = TextAlignmentOptions.Top;
-        textoVR.rectTransform.sizeDelta = new Vector2(1.4f, 1.6f);
-        textoVR.rectTransform.pivot = new Vector2(0.5f, 1f);
-        textoVR.enableWordWrapping = true;
-        textoVR.outlineWidth = 0.25f;
-        textoVR.outlineColor = new Color32(0, 0, 0, 220);
-        textoVR.text = "";
+        CanvasScaler scaler = canvasOverlayVR.AddComponent<CanvasScaler>();
+        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+        scaler.referenceResolution = new Vector2(1920, 1080);
+        canvasOverlayVR.AddComponent<GraphicRaycaster>();
+
+        // Línea divisoria central vertical exacta (como en YouTube VR)[cite: 1]
+        GameObject lineaCentral = new GameObject("LineaDivisoria");
+        lineaCentral.transform.SetParent(canvasOverlayVR.transform, false);
+        Image imgLinea = lineaCentral.AddComponent<Image>();
+        imgLinea.color = new Color(1f, 1f, 1f, 0.95f);
+
+        RectTransform rectLinea = lineaCentral.GetComponent<RectTransform>();
+        rectLinea.anchorMin = new Vector2(0.5f, 0f);
+        rectLinea.anchorMax = new Vector2(0.5f, 1f);
+        rectLinea.sizeDelta = new Vector2(3f, 0f);
+        rectLinea.anchoredPosition = Vector2.zero;
+
+        // Marcos circulares negros para cada lente (evitan la distorsión y visión doble)[cite: 1]
+        CrearMarcoLente(canvasOverlayVR.transform, new Vector2(0.25f, 0.5f)); 
+        CrearMarcoLente(canvasOverlayVR.transform, new Vector2(0.75f, 0.5f)); 
+
+        // Elementos de UI limpios y centrados para cada lente (Mira y Ficha del planeta)
+        CrearElementoUIEstereo(canvasOverlayVR.transform, new Vector2(0.25f, 0.5f)); 
+        CrearElementoUIEstereo(canvasOverlayVR.transform, new Vector2(0.75f, 0.5f)); 
+    }
+
+    void CrearMarcoLente(Transform padre, Vector2 anclaCentro)
+    {
+        GameObject marco = new GameObject("EnmascaradoLente");
+        marco.transform.SetParent(padre, false);
+        
+        Outline borde = marco.AddComponent<Outline>();
+        borde.effectColor = Color.black;
+        borde.effectDistance = new Vector2(160f, 160f); // Aro negro envolvente que enmarca la lente física
+
+        Image img = marco.AddComponent<Image>();
+        img.color = Color.clear;
+
+        RectTransform rt = marco.GetComponent<RectTransform>();
+        rt.anchorMin = anclaCentro;
+        rt.anchorMax = anclaCentro;
+        rt.sizeDelta = new Vector2(960f * escalaLente, 1080f * escalaLente);
+        rt.anchoredPosition = Vector2.zero;
+    }
+
+    void CrearElementoUIEstereo(Transform padre, Vector2 anclaCentro)
+    {
+        GameObject contenedor = new GameObject("LenteUI_" + (anclaCentro.x < 0.5f ? "Izq" : "Der"));
+        contenedor.transform.SetParent(padre, false);
+        RectTransform rtContenedor = contenedor.AddComponent<RectTransform>();
+        rtContenedor.anchorMin = anclaCentro;
+        rtContenedor.anchorMax = anclaCentro;
+        rtContenedor.sizeDelta = new Vector2(960, 1080);
+        rtContenedor.anchoredPosition = Vector2.zero;
+
+        // Mira centrada individualmente por lente
+        GameObject miraObj = new GameObject("MiraUI");
+        miraObj.transform.SetParent(contenedor.transform, false);
+        Image imgMira = miraObj.AddComponent<Image>();
+        imgMira.color = new Color(0.8f, 0.8f, 0.8f, 0.9f);
+        
+        RectTransform rtMira = miraObj.GetComponent<RectTransform>();
+        rtMira.anchorMin = new Vector2(0.5f, 0.5f);
+        rtMira.anchorMax = new Vector2(0.5f, 0.5f);
+        rtMira.sizeDelta = new Vector2(24f, 24f);
+        rtMira.anchoredPosition = Vector2.zero;
+
+        // Ficha de información detallada del planeta limpia y centrada
+        GameObject textoObj = new GameObject("TextoFichaUI");
+        textoObj.transform.SetParent(contenedor.transform, false);
+        TextMeshProUGUI txt = textoObj.AddComponent<TextMeshProUGUI>();
+        txt.fontSize = 24;
+        txt.alignment = TextAlignmentOptions.Center;
+        txt.color = Color.white;
+        txt.enableWordWrapping = true;
+
+        Outline outline = textoObj.AddComponent<Outline>();
+        outline.effectColor = Color.black;
+        outline.effectDistance = new Vector2(2f, 2f);
+
+        RectTransform rtTexto = textoObj.GetComponent<RectTransform>();
+        rtTexto.anchorMin = new Vector2(0.5f, 0.5f);
+        rtTexto.anchorMax = new Vector2(0.5f, 0.5f);
+        rtTexto.sizeDelta = new Vector2(700f, 250f);
+        rtTexto.anchoredPosition = new Vector2(0f, -120f);
+        txt.text = "";
     }
 
     void Update()
@@ -147,7 +220,6 @@ public class ModoVisor : MonoBehaviour
         if (!Activo) return;
         if (PresionoAtras()) { Salir(); return; }
 
-        // ¿Qué planeta está en el centro de la vista?
         var t = principal.transform;
         PlanetInfo actual = null;
         if (Physics.Raycast(t.position, t.forward, out RaycastHit golpe, 100f)) golpe.collider.TryGetComponent(out actual);
@@ -178,13 +250,31 @@ public class ModoVisor : MonoBehaviour
             }
         }
 
-        // La mira crece y se pone dorada mientras se mantiene la mirada.
-        mira.localScale = Vector3.one * 0.0032f * (1f + progreso * 1.6f);
-        materialMira.SetColor("_TintColor", Color.Lerp(new Color(0.5f, 0.5f, 0.5f, 0.45f), new Color(0.6f, 0.45f, 0.1f, 0.6f), progreso));
-        if (Time.unscaledTime > ocultarTextoEn) textoVR.text = "";
+        float escalaMiraActual = 24f * (1f + progreso * 1.5f);
+        Color colorMiraActual = Color.Lerp(new Color(0.8f, 0.8f, 0.8f, 0.9f), new Color(1f, 0.85f, 0.2f, 1f), progreso);
+
+        if (canvasOverlayVR != null)
+        {
+            foreach (Transform hijo in canvasOverlayVR.transform)
+            {
+                if (hijo.name.StartsWith("LenteUI_"))
+                {
+                    Transform m = hijo.Find("MiraUI");
+                    if (m != null)
+                    {
+                        m.GetComponent<RectTransform>().sizeDelta = new Vector2(escalaMiraActual, escalaMiraActual);
+                        m.GetComponent<Image>().color = colorMiraActual;
+                    }
+                }
+            }
+        }
+
+        if (Time.unscaledTime > ocultarTextoEn)
+        {
+            MostrarTexto("", 0f);
+        }
     }
 
-    // Comando de voz "ir a Marte" dentro del visor.
     public void ElegirPorVoz(PlanetInfo planeta)
     {
         if (Activo) Elegir(planeta);
@@ -199,17 +289,29 @@ public class ModoVisor : MonoBehaviour
         explorador.Viajar(planeta.transform);
         if (SonidoEspacial.Instancia != null) SonidoEspacial.Instancia.Toque();
         var d = planeta.datos;
-        MostrarTexto($"<b><color=#F2B533>{d.nombre}</color></b>\n<size=75%>{d.tipo}  ·  {d.diametro}\n<i>{d.datoCurioso}</i></size>", 9f);
+        
+        string ficha = $"<b><color=#F2B533>{d.nombre}</color></b>\n<size=75%>{d.tipo}  ·  {d.diametro}\n<i>{d.datoCurioso}</i></size>";
+        MostrarTexto(ficha, 9f);
+        
         Narrador.Instancia?.Decir(ComandosVoz.TextoFicha(d));
     }
 
     void MostrarTexto(string texto, float segundos)
     {
-        textoVR.text = texto;
+        if (canvasOverlayVR != null)
+        {
+            foreach (Transform hijo in canvasOverlayVR.transform)
+            {
+                if (hijo.name.StartsWith("LenteUI_"))
+                {
+                    TextMeshProUGUI txtUI = hijo.Find("TextoFichaUI")?.GetComponent<TextMeshProUGUI>();
+                    if (txtUI != null) txtUI.text = texto;
+                }
+            }
+        }
         ocultarTextoEn = Time.unscaledTime + segundos;
     }
 
-    // Un toque corto (no un arrastre) que no empezó sobre el botón Salir.
     bool Toco()
     {
         bool presiono, solto;

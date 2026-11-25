@@ -15,7 +15,7 @@ public class RecorridoGuiado : MonoBehaviour
     public System.Action<bool> alCambiar;
 
     static readonly string[] Orden =
-        { "Sol", "Mercurio", "Venus", "Tierra", "Luna", "Marte", "Júpiter", "Saturno", "Urano", "Neptuno", "Cometa Halley" };
+        { "Sol", "Mercurio", "Venus", "Tierra", "Luna", "Marte", "Júpiter", "Saturno", "Urano", "Neptuno", "Plutón", "Cometa Halley" };
 
     public bool Activo { get; private set; }
     string textoOriginal;

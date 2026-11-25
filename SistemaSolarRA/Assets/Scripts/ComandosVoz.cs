@@ -26,7 +26,7 @@ public class ComandosVoz : MonoBehaviour
     {
         { "sol", "Sol" }, { "mercurio", "Mercurio" }, { "venus", "Venus" }, { "tierra", "Tierra" },
         { "luna", "Luna" }, { "marte", "Marte" }, { "jupiter", "Júpiter" }, { "saturno", "Saturno" },
-        { "urano", "Urano" }, { "neptuno", "Neptuno" }, { "cometa", "Cometa Halley" }, { "halley", "Cometa Halley" },
+        { "urano", "Urano" }, { "neptuno", "Neptuno" }, { "pluton", "Plutón"}, { "cometa", "Cometa Halley" }, { "halley", "Cometa Halley" },
     };
 
     const string Ayuda = "Puedes decir: ir a Saturno, o el nombre de cualquier planeta. También: recorrido, quiz, " +
@@ -194,7 +194,7 @@ public class ComandosVoz : MonoBehaviour
         {
             ("Sol", "al Sol"), ("Mercurio", "a Mercurio"), ("Venus", "a Venus"), ("Tierra", "a la Tierra"),
             ("Luna", "a la Luna"), ("Marte", "a Marte"), ("Júpiter", "a Júpiter"), ("Saturno", "a Saturno"),
-            ("Urano", "a Urano"), ("Neptuno", "a Neptuno"), ("cometa", "al cometa"), ("cometa Halley", "al cometa Halley"),
+            ("Urano", "a Urano"), ("Neptuno", "a Neptuno"), ("Plutón", "a Plutón"), ("cometa", "al cometa"), ("cometa Halley", "al cometa Halley"),
         };
         foreach (var (nombre, conArticulo) in formas)
         {

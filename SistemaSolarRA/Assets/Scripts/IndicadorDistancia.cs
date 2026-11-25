@@ -9,7 +9,7 @@ public class IndicadorDistancia : MonoBehaviour
     public TextMeshProUGUI texto;
 
     // Distancia real al Sol en unidades astronómicas (1 UA = 149,6 millones de km), de Mercurio a Neptuno.
-    static readonly float[] DistanciaRealUA = { 0.387f, 0.723f, 1f, 1.524f, 5.203f, 9.537f, 19.19f, 30.07f };
+    static readonly float[] DistanciaRealUA = { 0.387f, 0.723f, 1f, 1.524f, 5.203f, 9.537f, 19.19f, 30.07f, 39.48f };
     const float RadioSolUA = 0.00465f;
 
     float[] radiosEscena;

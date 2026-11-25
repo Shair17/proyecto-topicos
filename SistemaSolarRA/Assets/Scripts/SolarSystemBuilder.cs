@@ -18,8 +18,8 @@ public class SolarSystemBuilder : MonoBehaviour
     [Tooltip("SistemaSolar/Atmosfera: halo de atmósfera alrededor de los planetas.")]
     public Material materialAtmosfera;
 
-    [Header("Texturas (mismo orden: Sol, Mercurio ... Neptuno)")]
-    public Texture2D[] texturas = new Texture2D[9];
+    [Header("Texturas (mismo orden: Sol, Mercurio ... Plutón)")]
+    public Texture2D[] texturas = new Texture2D[10];
     public Texture2D texturaAnillo;
     public Texture2D texturaNubes;
     public Texture2D texturaLuna;
@@ -35,6 +35,7 @@ public class SolarSystemBuilder : MonoBehaviour
     public bool mostrarEstrellas = true;
     public bool mostrarLuna = true;
     public bool mostrarCometa = true;
+    public bool mostrarCinturonKuiper = true;
     [Tooltip("Apaga las luces direccionales de la escena para que el Sol sea la única luz (lado de día y de noche).")]
     public bool apagarLucesDireccionales = true;
     public Color luzAmbiente = new Color(0.1f, 0.1f, 0.13f);
@@ -54,6 +55,7 @@ public class SolarSystemBuilder : MonoBehaviour
         for (int i = 0; i < Planetas.Length; i++)
             CrearCuerpo(Planetas[i], i);
         if (mostrarAsteroides) CrearCinturonAsteroides();
+        if (mostrarCinturonKuiper) CrearCinturonKuiper();
         if (mostrarEstrellas) CrearEstrellas();
         if (mostrarCometa) CrearCometa();
 
@@ -418,18 +420,17 @@ public class SolarSystemBuilder : MonoBehaviour
         if (materialAditivo == null) return;
         var pivote = new GameObject("CinturonAsteroides").transform;
         pivote.SetParent(transform, false);
-        pivote.gameObject.AddComponent<PlanetOrbit>().velocidadOrbita = 5f;
+        pivote.gameObject.AddComponent<PlanetOrbit>().velocidadOrbita = 2f;
 
-        const int cantidad = 700;
-        float rMin = RadioOrbita(0.575f), rMax = RadioOrbita(0.64f);
-        var ps = Procedural.CrearParticulas("Asteroides", pivote, MaterialAditivo(new Color(0.5f, 0.5f, 0.5f, 0.5f)), cantidad, false);
+        const int cantidad = 1200;
+        float rMin = RadioOrbita(0.55f), rMax = RadioOrbita(0.65f); // Ubicado lógicamente entre Marte (0.47) y Júpiter (0.70)
+        var ps = Procedural.CrearParticulas("Asteroides", pivote, MaterialAditivo(new Color(0.6f, 0.6f, 0.6f, 0.6f)), cantidad, false);
         for (int i = 0; i < cantidad; i++)
         {
             float a = Random.Range(0f, Mathf.PI * 2f);
             float r = Mathf.Lerp(rMin, rMax, (Random.value + Random.value) * 0.5f);
-            var pos = new Vector3(Mathf.Cos(a) * r, Random.Range(-0.003f, 0.003f), Mathf.Sin(a) * r);
-            float gris = Random.Range(0.45f, 0.8f);
-            Procedural.EmitirFija(ps, pos, Random.Range(0.0012f, 0.003f), new Color(gris, gris * 0.92f, gris * 0.85f, 0.9f));
+            var pos = new Vector3(Mathf.Cos(a) * r, Random.Range(-0.01f, 0.01f), Mathf.Sin(a) * r);
+            Procedural.EmitirFija(ps, pos, Random.Range(0.001f, 0.003f), new Color(0.5f, 0.5f, 0.5f, 0.7f));
         }
         aparicion.Agregar(null, pivote);
     }
@@ -457,5 +458,26 @@ public class SolarSystemBuilder : MonoBehaviour
             new[] { new GradientColorKey(Color.white, 0f), new GradientColorKey(Color.white, 1f) },
             new[] { new GradientAlphaKey(0f, 0f), new GradientAlphaKey(1f, 0.5f), new GradientAlphaKey(0f, 1f) });
         color.color = g;
+    }
+
+    void CrearCinturonKuiper()
+    {
+        if (materialAditivo == null) return;
+        var pivote = new GameObject("CinturonKuiper").transform;
+        pivote.SetParent(transform, false);
+        pivote.gameObject.AddComponent<PlanetOrbit>().velocidadOrbita = 0.5f;
+
+        const int cantidad = 1000;
+        float rMin = RadioOrbita(1.90f), rMax = RadioOrbita(2.20f); // Ubicado más allá de Plutón (1.75)
+        var ps = Procedural.CrearParticulas("Kuiper", pivote, MaterialAditivo(new Color(0.4f, 0.55f, 0.7f, 0.5f)), cantidad, false);
+        for (int i = 0; i < cantidad; i++)
+        {
+            float a = Random.Range(0f, Mathf.PI * 2f);
+            float r = Mathf.Lerp(rMin, rMax, (Random.value + Random.value) * 0.5f);
+            var pos = new Vector3(Mathf.Cos(a) * r, Random.Range(-0.015f, 0.015f), Mathf.Sin(a) * r);
+            float azul = Random.Range(0.5f, 0.9f);
+            Procedural.EmitirFija(ps, pos, Random.Range(0.0015f, 0.0035f), new Color(azul * 0.7f, azul * 0.85f, azul, 0.8f));
+        }
+        aparicion.Agregar(null, pivote);
     }
 }
